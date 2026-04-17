@@ -37,8 +37,8 @@ async def send_playing_message(client: Client, chat_id: int, song, song_info=Non
         
         # Get metadata from song_info or song object
         thumbnail_url = getattr(song_info, 'thumbnail', song.thumbnail) if song_info else song.thumbnail
-        artist = getattr(song_info, 'channel', 'Unknown') if song_info else "Unknown"
-        views = format_views(getattr(song_info, 'views', '0')) if song_info else "0"
+        artist = getattr(song_info, 'channel', song.artist) if song_info else song.artist
+        views = format_views(getattr(song_info, 'views', song.views)) if song_info else format_views(song.views)
         
         if thumbnail_url:
             thumb_path = create_thumbnail(
@@ -185,7 +185,9 @@ async def play_command(client: Client, message: Message):
             thumbnail=song_info.thumbnail,
             requester=message.from_user.first_name,
             video_id=song_info.video_id,
-            url=song_info.url
+            url=song_info.url,
+            artist=getattr(song_info, 'channel', 'Unknown'),
+            views=str(getattr(song_info, 'views', '0'))
         )
         
         # Check if anything is already playing in the chat

@@ -18,6 +18,8 @@ class Song:
     requester: str
     video_id: str = ""
     url: str = ""
+    artist: str = "Unknown"
+    views: str = "0"
 
 
 class Queue:

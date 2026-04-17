@@ -302,13 +302,23 @@ class CallManager:
         return queue.current_song
     
     async def handle_stream_ended(self, chat_id: int, update: Update):
-        """Handle stream ended event - play next song or auto leave"""
-        # Only handle if the stream actually ended
-        if not isinstance(update, StreamEnded):
-            return
-            
+        """Handle stream ended event or voice chat closed event"""
         try:
             queue = queue_manager.get_queue(chat_id)
+            
+            # Handle Voice Chat Closed
+            if isinstance(update, ChatUpdate):
+                if update.status == ChatUpdate.Status.CLOSED_VOICE_CHAT:
+                    logger.info(f"Voice chat closed in {chat_id}, clearing queue")
+                    queue.clear_queue()
+                    queue.current_song = None
+                    queue.is_playing = False
+                    self.active_chats[chat_id] = False
+                    return
+
+            # Only handle if the stream actually ended
+            if not isinstance(update, StreamEnded):
+                return
             
             # Skip current song and get next
             next_song = queue.skip_song()
