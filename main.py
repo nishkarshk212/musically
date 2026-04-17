@@ -67,6 +67,12 @@ async def main():
         logger.info("\n⚠️  Bot stopped by user (Ctrl+C)")
     except Exception as e:
         logger.error(f"❌ Fatal error: {e}", exc_info=True)
+        # Try to send error log if bot_app is initialized
+        if bot_app and bot_app.app and bot_app.app.is_connected:
+            try:
+                await bot_app.send_error_log(f"Fatal error: {e}")
+            except:
+                pass
         sys.exit(1)
     finally:
         logger.info("👋 Bot shutdown complete.")

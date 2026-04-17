@@ -15,6 +15,7 @@ from utils.decorators import bot_can_manage_vc
 from utils.strings import build_playing_message, SUCCESS_ADDED_TO_QUEUE, ERROR_NO_RESULTS, ERROR_QUEUE_FULL, SUPPORT_CHANNEL_USERNAME
 from utils.html_helper import blockquote
 from config import MAX_QUEUE_SIZE
+from core.bot import bot_app
 import os
 import random
 import asyncio
@@ -240,28 +241,23 @@ async def play_command(client: Client, message: Message):
     except Exception as e:
         logger.error(f"Play command error: {e}", exc_info=True)
         
-        # Provide helpful error messages for common issues
-        error_msg = str(e)
-        if "CHANNEL_INVALID" in error_msg:
-            await message.reply_text(
-                "❌ **Channel Error:** The bot cannot access this channel.\n\n"
-                "**To fix this:**\n"
-                "1. Make sure the bot is an admin in the channel\n"
-                "2. Make sure your user account (session) is a member of the channel\n"
-                "3. Ensure SESSION_STRING is properly configured in .env\n"
-                "4. Try using the command in a group instead of a channel"
-            )
-        elif "User account session is required" in error_msg:
-            await message.reply_text(
-                "❌ **User Session Required:** Playing in channels requires a user account session.\n\n"
-                "**To fix this:**\n"
-                "1. Run `python session_generator.py` to generate a session string\n"
-                "2. Add the SESSION_STRING to your .env file\n"
-                "3. Restart the bot"
-            )
-        else:
-            await message.reply_text(
-                f"❌ An error occurred while playing the song.\n\n"
-                f"**Error:** `{str(e)}`\n\n"
-                "Please try again or contact support."
-            )
+        # Send error log to log group
+        if bot_app:
+            await bot_app.send_error_log(f"Play Command Error in {message.chat.id}: {str(e)}")
+            
+        # Send sorry message to the group
+        sorry_text = (
+            "ꜱᴏʀʀʏ ʙᴀʙᴜ ! ᴛʀʏ ᴘʟᴀʏɪɴɢ ᴏᴛʜᴇʀ \n\n"
+            "ᴛʜɪs ᴛʀᴀᴄᴋ ᴄᴏᴜʟᴅɴ'ᴛ ʙᴇ ᴘʟᴀʏᴇᴅ. \n"
+            "ᴘʟᴇᴀsᴇ ᴛʀʏ ᴀɴᴏᴛʜᴇʀ sᴏɴɢ. 🥀"
+        )
+        
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("⊜ ꜱᴜᴘᴘσʀᴛ ⊜", url=f"https://t.me/{SUPPORT_CHANNEL_USERNAME}")]
+        ])
+        
+        await message.reply_text(sorry_text, reply_markup=keyboard)
+        
+        # Restart the bot service (Only if it's a fatal error, not just a playback issue)
+        # if bot_app:
+        #     await bot_app.restart()

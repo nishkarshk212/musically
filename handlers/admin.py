@@ -132,13 +132,14 @@ async def start_command(client: Client, message: Message):
             user_mention = message.from_user.mention
             support_mention = f"<a href='https://t.me/{SUPPORT_CHANNEL_USERNAME}'>Support Channel</a>"
             
-            private_start_text = f"""╭───────────────────▣
-│❍ ʜᴇʏ {user_mention}
-│❍ ɪ ᴀᴍ {bot_mention}
-├───────────────────▣
-│❍ ʙᴇsᴛ ǫᴜɪʟɪᴛʏ ғᴇᴀᴛᴜʀᴇs •
-│❍ ᴘᴏᴡᴇʀᴇᴅ ʙʏ...{support_mention}
-╰───────────────────▣"""
+            private_start_text = f"""━━━━━━━━━━━━━━━━━━━━━━━━▢
+❍ ʜᴇʏ {user_mention}
+❍ ɪ ᴀᴍ {bot_mention}
+━━━━━━━━━━━━━━━━━━━━━━━━▢
+━━━━━━━━━━━━━━━━━━━━━━━━▢
+❍ ʙᴇsᴛ ǫᴜɪʟɪᴛʏ ғᴇᴀᴛᴜʀᴇs •
+❍ ᴘᴏᴡᴇʀᴇᴅ ʙʏ...{support_mention}
+━━━━━━━━━━━━━━━━━━━━━━━━▢"""
             
             # Create inline keyboard for private chat
             keyboard = InlineKeyboardMarkup([
@@ -160,11 +161,15 @@ async def start_command(client: Client, message: Message):
                 ]
             ])
             
+            # Use the specific train landscape image for start
+            selected_image = "https://i.ibb.co/wFwqqbjk/anime-landscape-person-traveling.jpg"
+            
             # Send photo with caption and buttons
             await message.reply_photo(
                 photo=selected_image,
                 caption=private_start_text,
-                reply_markup=keyboard
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML
             )
         
     except Exception as e:

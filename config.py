@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BOT_TOKEN = os.getenv("BOT_TOKEN", "8740501995:AAHwt8MSz8XNJeCl_vLYUs8yPOokom0XjxA")
+BOT_TOKEN = os.getenv("BOT_TOKEN", "8740501995:AAHKfFEddEEGx-2O5GWWEMkiPx7Qq3xJRvM")
 API_ID = int(os.getenv("API_ID", "38269682"))
 API_HASH = os.getenv("API_HASH", "822b916e4b3c1f9690e6aa3a8c0fbc8f")
 
@@ -46,5 +46,11 @@ MAX_QUEUE_SIZE = 50  # Maximum songs in queue
 DEFAULT_VOLUME = 100  # Default volume (1-200)
 
 # Logging
-LOG_GROUP_ID = None  # Log group ID (optional)
+LOG_GROUP_ID = os.getenv("LOG_GROUP_ID", "@music_24345")
+# Try to convert to int if it's a numeric ID, otherwise keep as string (username)
+try:
+    if LOG_GROUP_ID and not LOG_GROUP_ID.startswith("@"):
+        LOG_GROUP_ID = int(LOG_GROUP_ID)
+except ValueError:
+    pass
 LOG_CHANNEL = None  # Log channel username (optional)

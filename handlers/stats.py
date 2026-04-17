@@ -172,18 +172,20 @@ async def overall_stats_callback(client, callback_query):
         blocked_count = await db_manager.get_blocked_count() if hasattr(db_manager, 'get_blocked_count') else 59
         
         # Build overall stats message
+        uptime = get_uptime()
         overall_stats_text = f"""{bot_mention} 𝖲𝗍𝖺𝗍𝗌 𝖠𝗇𝖽 𝖨𝗇𝖿𝗈𝗋𝗆𝖺𝗍𝗂𝗈𝗇 :
 
 𝖠𝗌𝗌𝗂𝗌𝗍𝖺𝗇𝗍𝗌 : 1
 𝖡𝗅𝗈𝖼𝗄𝖾𝖽 : {blocked_count}
-𝖢𝗁𝖺𝗍𝗌 : {chat_count}
+𝖢𝗁𝖺ᴛ𝗌 : {chat_count}
 𝖴𝗌𝖾𝗋𝗌 : {user_count}
 𝖬𝗈𝖽𝗎𝗅𝖾𝗌 : 41
 𝖲𝗎𝖽𝗈𝖾𝗋𝗌 : 1
+𝖴𝗉𝖳𝗂𝗆𝖾 : {uptime}
 
 𝖠𝗎𝗍𝗈 𝖫𝖾𝖺𝗏𝗂𝗇𝗀 VideoChat : False
-𝖠𝗎𝗍𝗈 𝖫𝖾𝖺𝗏𝗂𝗇𝗀 Groups : False
-𝖯𝗅𝖺𝗒 𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇 𝖫𝗂𝗆𝗂𝗍 : 480 𝖬𝗂𝗇𝗎𝗍𝖾𝗌"""
+𝖠𝗎ᴛ𝗈 𝖫𝖾𝖺𝗏𝗂𝗇𝗀 Groups : False
+𝖯𝗅𝖺𝗒 𝖣𝗎𝗋𝖺𝗍𝗂𝗈𝗇 𝖫𝗂ᴍ𝗂𝗍 : 480 𝖬𝗂𝗇𝗎𝗍𝖾𝗌"""
         
         # Randomly select an image
         selected_image = random.choice(PING_IMAGES)

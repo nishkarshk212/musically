@@ -4,11 +4,11 @@ Bot Initialization and Setup
 
 import asyncio
 import logging
-from pyrogram import Client, idle
+from pyrogram import Client, idle, filters
 from pyrogram.handlers import MessageHandler, CallbackQueryHandler
 from pyrogram.filters import command
 from pyrogram.types import BotCommand
-from config import API_ID, API_HASH, BOT_TOKEN, SESSION_STRING, MONGO_DB
+from config import API_ID, API_HASH, BOT_TOKEN, SESSION_STRING, MONGO_DB, LOG_GROUP_ID
 from core.call_manager import CallManager
 from core.userbot import assistant_manager
 from database.mongodb import init_db
@@ -20,6 +20,21 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+
+class TelegramLogHandler(logging.Handler):
+    """Logging handler to send error logs to Telegram log group"""
+    def __init__(self, bot_app):
+        super().__init__()
+        self.bot_app = bot_app
+        self.setLevel(logging.ERROR)
+
+    def emit(self, record):
+        if not self.bot_app.app or not self.bot_app.app.is_connected:
+            return
+            
+        log_entry = self.format(record)
+        asyncio.create_task(self.bot_app.send_error_log(log_entry))
 
 
 class BotApp:
@@ -56,6 +71,11 @@ class BotApp:
         # Initialize Database
         await init_db(MONGO_DB)
         
+        # Add Telegram log handler
+        tg_handler = TelegramLogHandler(self)
+        tg_handler.setFormatter(logging.Formatter('%(name)s: %(message)s'))
+        logging.getLogger().addHandler(tg_handler)
+        
         logger.info("Bot initialized successfully!")
     
     async def start_services(self):
@@ -76,8 +96,40 @@ class BotApp:
         if self.call_manager:
             await self.call_manager.initialize_user_client()
         
+        # Send start message to log group
+        if LOG_GROUP_ID:
+            try:
+                bot_mention = self.app.me.mention
+                message = (
+                    f"{bot_mention} ʙᴏᴛ sᴛᴀʀᴛᴇᴅ : \n\n"
+                    f"ɪᴅ : {self.app.me.id}\n"
+                    f"ɴᴀᴍᴇ : {self.app.me.first_name}\n"
+                    f"ᴜsᴇʀɴᴀᴍᴇ : @{self.app.me.username}"
+                )
+                await self.app.send_message(LOG_GROUP_ID, message)
+            except Exception as e:
+                logger.error(f"Failed to send start message to log group: {e}")
+        
         logger.info("Bot is now running!")
         
+        # Start auto-restart timer (24 hours = 86400 seconds)
+        asyncio.create_task(self.auto_restart_timer())
+        
+    async def auto_restart_timer(self):
+        """Timer for 24-hour auto-restart"""
+        await asyncio.sleep(86400)
+        if LOG_GROUP_ID:
+            try:
+                await self.app.send_message(
+                    LOG_GROUP_ID, 
+                    "🔄 **24-Hour Scheduled Restart...**\n\n"
+                    "The bot is restarting to maintain performance."
+                )
+            except Exception as e:
+                logger.error(f"Failed to send restart message: {e}")
+        
+        await self.restart()
+
     def setup_handlers(self):
         """Setup all command handlers"""
         logger.info("Setting up handlers...")
@@ -102,6 +154,10 @@ class BotApp:
         from handlers.maintenance import logs_command, logger_command, maintenance_command
         from handlers.ytsearch import search_command, csearch_command
         from handlers.settings_command import settings_command
+        from handlers.new_group import new_group_handler
+        
+        # New group handler
+        self.app.add_handler(MessageHandler(new_group_handler, filters.new_chat_members))
         
         # Settings command
         self.app.add_handler(MessageHandler(settings_command, command("settings")))
@@ -266,6 +322,27 @@ class BotApp:
         except Exception as e:
             logger.error(f"Failed to set bot commands: {e}")
     
+    async def send_error_log(self, error_msg: str):
+        """Send error message to log group"""
+        if LOG_GROUP_ID:
+            try:
+                # Truncate if too long for Telegram
+                if len(error_msg) > 4000:
+                    error_msg = error_msg[:4000] + "..."
+                await self.app.send_message(LOG_GROUP_ID, f"❌ **Error Log:**\n\n`{error_msg}`")
+            except Exception as e:
+                # Don't use logger.error here as it will cause recursion
+                print(f"Failed to send error log to Telegram: {e}")
+
+    async def restart(self):
+        """Restart the bot process"""
+        import sys
+        import os
+        logger.info("Restarting bot process...")
+        # Give some time for messages to be sent
+        await asyncio.sleep(2)
+        os.execl(sys.executable, sys.executable, *sys.argv)
+
     async def run(self):
         """Run the bot"""
         await self.start_services()

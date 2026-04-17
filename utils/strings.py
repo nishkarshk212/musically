@@ -58,14 +58,12 @@ def build_playing_message(title, title_url, duration, requester, bot_name="Music
     # Create clickable song title
     song_mention = f'<a href="{title_url}">{title}</a>' if title_url else title
     
-    # Styled with separate blockquotes for a colorful/structured look
+    # Styled with dual blockquotes for the specific look in the screenshot
     return (
-        "<blockquote><b>❖ δTΛRTED δTREΛMIηG ❞</b></blockquote>"
-        "<blockquote>"
+        "<b>❖ δTΛRTED δTREΛMIηG ❞</b>\n\n"
         f"<b>❍ TITLE :</b> {song_mention} <b>❞</b>\n"
         f"<b>❍ DURΛTIση :</b> {duration} <b>MIηUTeS</b>\n"
         f"<b>❍ BY :</b> {requester}"
-        "</blockquote>"
     )
 
 # For backward compatibility

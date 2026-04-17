@@ -9,7 +9,7 @@ from typing import Optional, List
 from pyrogram import Client
 from pyrogram.types import Chat, ChatMember
 from pyrogram.enums import ChatMemberStatus
-from config import API_ID, API_HASH, SESSION_STRING, SESSION_STRING_2, SESSION_STRING_3, SESSION_STRING_4, SESSION_STRING_5
+from config import API_ID, API_HASH, SESSION_STRING, SESSION_STRING_2, SESSION_STRING_3, SESSION_STRING_4, SESSION_STRING_5, LOG_GROUP_ID
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,15 @@ class AssistantManager:
                     f"✅ Assistant {idx} started: {assistant.me.first_name} "
                     f"(ID: {assistant.me.id}, @{assistant.me.username or 'NoUsername'})"
                 )
+                
+                # Send start message to log group
+                if LOG_GROUP_ID:
+                    try:
+                        assistant_mention = assistant.me.mention
+                        message = f"{assistant_mention} 𝐒ᴛᴀʀᴛᴇᴅ 𝐒ᴜᴄᴄᴇssғᴜʟʟʏ... "
+                        await assistant.send_message(LOG_GROUP_ID, message)
+                    except Exception as e:
+                        logger.error(f"Failed to send assistant start message to log group: {e}")
                 
             except Exception as e:
                 logger.error(f"❌ Failed to start assistant {idx}: {e}")
