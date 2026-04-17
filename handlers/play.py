@@ -217,8 +217,7 @@ async def play_command(client: Client, message: Message):
                 return
             
             try:
-                # Add song to queue FIRST to prevent auto-leave
-                queue.add_song(song)
+                # Set as current song IMMEDIATELY (do not add to queue yet)
                 queue.current_song = song
                 queue.is_playing = True
                 
