@@ -5,6 +5,7 @@ Manages bot settings and configuration
 
 import random
 from pyrogram import Client
+from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 from database.mongodb import db_manager
 
 # Settings panel images (same as start images)
