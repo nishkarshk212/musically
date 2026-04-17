@@ -9,8 +9,9 @@ from typing import Optional, Dict
 from pyrogram import Client
 from pyrogram.types import Chat
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioQuality, MediaStream, Update, StreamAudioEnded
+from pytgcalls.types import AudioQuality, MediaStream, Update
 from pytgcalls.types import ChatUpdate
+from pytgcalls.types.stream import StreamAudioEnded, StreamVideoEnded
 from core.queue import queue_manager, Song
 from config import DEFAULT_VOLUME
 import logging
@@ -303,6 +304,10 @@ class CallManager:
     
     async def handle_stream_ended(self, chat_id: int, update: Update):
         """Handle stream ended event - play next song or auto leave"""
+        # Only handle if the stream actually ended
+        if not isinstance(update, (StreamAudioEnded, StreamVideoEnded)):
+            return
+            
         try:
             queue = queue_manager.get_queue(chat_id)
             
@@ -327,13 +332,27 @@ class CallManager:
             else:
                 # If queue is empty and no more songs, leave voice chat
                 logger.info(f"Queue empty for chat {chat_id}, auto-leaving voice chat")
-                await asyncio.sleep(15)  # Wait 15 seconds before leaving
+                
+                # Wait 5 seconds before leaving to prevent rapid join/leave
+                await asyncio.sleep(5)
                 
                 # Double check queue is still empty
                 if queue.is_empty() and not queue.current_song:
                     await self.leave_voice_chat(chat_id)
                     queue.clear_queue()
                     logger.info(f"Auto-left voice chat in {chat_id}")
+                    
+                    # Log message about auto-leaving
+                    from config import LOG_GROUP_ID
+                    from core.bot import bot_app
+                    if LOG_GROUP_ID:
+                        try:
+                            await bot_app.app.send_message(
+                                LOG_GROUP_ID,
+                                f"👋 **Assistant auto-left voice chat in `{chat_id}`** (Queue ended)"
+                            )
+                        except:
+                            pass
                     
         except Exception as e:
             logger.error(f"Error handling stream ended in {chat_id}: {e}")

@@ -188,9 +188,11 @@ async def play_command(client: Client, message: Message):
             url=song_info.url
         )
         
-        # PRIORITY: Start playing IMMEDIATELY (within 1 second)
-        if call_manager and call_manager.is_playing(chat_id):
-            # Add to queue - fast operation
+        # Check if anything is already playing in the chat
+        is_already_playing = call_manager and call_manager.is_playing(chat_id)
+        
+        if is_already_playing:
+            # ALREADY PLAYING - Add to queue and show "Queued" message
             position = queue.add_song(song)
             
             # Create keyboard with close button
@@ -207,7 +209,7 @@ async def play_command(client: Client, message: Message):
                 parse_mode=ParseMode.HTML
             )
         else:
-            # NOT PLAYING - Join VC and play IMMEDIATELY
+            # NOT PLAYING - Join VC and play IMMEDIATELY without "Queued" message
             if not call_manager:
                 await message.reply_text("❌ Call manager not initialized!")
                 return
