@@ -237,43 +237,43 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
         if data.startswith("pm_"):
             mode = data.replace("pm_", "")
             await db_manager.save_chat_settings(chat_id, {"play_mode": mode})
-            await callback_query.answer(f"✅ Play mode set to {mode}!", show_alert=True)
+            await callback_query.answer(f"✅ Play mode set to {mode}!", show_alert=False)
             await playmode_callback(client, callback_query)
             
         elif data.startswith("sm_"):
             mode = data.replace("sm_", "")
             await db_manager.save_chat_settings(chat_id, {"skip_mode": mode})
-            await callback_query.answer(f"✅ Skip mode set to {mode}!", show_alert=True)
+            await callback_query.answer(f"✅ Skip mode set to {mode}!", show_alert=False)
             await skipmode_callback(client, callback_query)
             
         elif data.startswith("quality_"):
             quality = data.replace("quality_", "")
             await db_manager.save_chat_settings(chat_id, {"quality": quality})
-            await callback_query.answer(f"✅ Quality set to {quality}!", show_alert=True)
+            await callback_query.answer(f"✅ Quality set to {quality}!", show_alert=False)
             await quality_callback(client, callback_query)
             
         elif data.startswith("lang_"):
             lang = data.replace("lang_", "")
             await db_manager.save_chat_settings(chat_id, {"language": lang})
-            await callback_query.answer(f"✅ Language set to {lang}!", show_alert=True)
+            await callback_query.answer(f"✅ Language set to {lang}!", show_alert=False)
             await language_callback(client, callback_query)
             
         elif data.startswith("vol_"):
             vol = int(data.replace("vol_", ""))
             await db_manager.save_chat_settings(chat_id, {"volume": vol})
-            await callback_query.answer(f"✅ Volume set to {vol}%!", show_alert=True)
+            await callback_query.answer(f"✅ Volume set to {vol}%!", show_alert=False)
             await volume_callback(client, callback_query)
             
         elif data.startswith("clean_"):
             status = data.replace("clean_", "")
             await db_manager.save_chat_settings(chat_id, {"clean_mode": status})
-            await callback_query.answer(f"✅ Clean mode {status}d!", show_alert=True)
+            await callback_query.answer(f"✅ Clean mode {status}d!", show_alert=False)
             await cleanmode_callback(client, callback_query)
             
         elif data.startswith("log_"):
             status = data.replace("log_", "")
             await db_manager.save_chat_settings(chat_id, {"logging": status})
-            await callback_query.answer(f"✅ Logging {status}d!", show_alert=True)
+            await callback_query.answer(f"✅ Logging {status}d!", show_alert=False)
             await logging_callback(client, callback_query)
 
     except Exception as e:
