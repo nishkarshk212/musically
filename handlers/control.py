@@ -6,6 +6,7 @@ Handles skip, pause, resume, stop, and volume commands
 from pyrogram import Client
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ParseMode
+import asyncio
 from core.queue import queue_manager
 from core.call_manager import call_manager
 from utils.formatter import format_time
