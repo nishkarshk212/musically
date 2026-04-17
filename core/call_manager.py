@@ -9,9 +9,8 @@ from typing import Optional, Dict
 from pyrogram import Client
 from pyrogram.types import Chat
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioQuality, MediaStream, Update
+from pytgcalls.types import AudioQuality, MediaStream, Update, StreamEnded
 from pytgcalls.types import ChatUpdate
-from pytgcalls.types.stream import StreamAudioEnded, StreamVideoEnded
 from core.queue import queue_manager, Song
 from config import DEFAULT_VOLUME
 import logging
@@ -305,7 +304,7 @@ class CallManager:
     async def handle_stream_ended(self, chat_id: int, update: Update):
         """Handle stream ended event - play next song or auto leave"""
         # Only handle if the stream actually ended
-        if not isinstance(update, (StreamAudioEnded, StreamVideoEnded)):
+        if not isinstance(update, StreamEnded):
             return
             
         try:
