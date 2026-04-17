@@ -57,7 +57,7 @@ async def send_playing_message(client: Client, chat_id: int, song, song_info=Non
         
         # Build the playing message with clickable title
         playing_caption = build_playing_message(
-            title=song.title[:35],
+            title=song.title,
             title_url=song.url if hasattr(song, 'url') else None,
             duration=format_time(song.duration),
             requester=song.requester,

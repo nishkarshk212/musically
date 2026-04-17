@@ -9,7 +9,7 @@ from typing import Optional, Dict
 from pyrogram import Client
 from pyrogram.types import Chat
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioQuality, MediaStream, Update
+from pytgcalls.types import AudioQuality, MediaStream, Update, StreamAudioEnded
 from pytgcalls.types import ChatUpdate
 from core.queue import queue_manager, Song
 from config import DEFAULT_VOLUME

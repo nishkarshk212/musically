@@ -51,16 +51,17 @@ HELP_MESSAGE = """
 
 # Now Playing Message (HTML format)
 def build_playing_message(title, title_url, duration, requester, bot_name="Music Bot"):
-    # Truncate title if too long and add ellipsis
-    if len(title) > 30:
-        title = title[:27] + "..."
+    # Truncate title if too long for a cleaner look
+    if len(title) > 25:
+        title = title[:22] + "..."
     
     # Create clickable song title
     song_mention = f'<a href="{title_url}">{title}</a>' if title_url else title
     
     # Styled with dual blockquotes: one for header, one for details
+    # Added \n between blockquotes to ensure they appear on separate lines
     return (
-        "<blockquote><b>❖  𝛅ᴛᴧʀᴛєᴅ  𝛅ᴛʀєᴧϻɪηɢ</b></blockquote>"
+        "<blockquote><b>❖  𝛅ᴛᴧʀᴛєᴅ  𝛅ᴛʀєᴧϻɪηɢ</b></blockquote>\n"
         "<blockquote>"
         f"<b>❍ тɪᴛʟє :</b> {song_mention}\n"
         f"<b>❍ ᴅᴜʀᴧᴛɪση :</b> {duration} <b>ϻɪηᴜᴛєs</b>\n"
