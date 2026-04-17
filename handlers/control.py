@@ -31,6 +31,9 @@ async def skip_command(client: Client, message: Message):
         # Skip the song
         next_song = await call_manager.skip(chat_id)
         
+        # Get user mention
+        user_mention = message.from_user.mention
+        
         if next_song:
             # Send simple skip message
             await message.reply_text(
@@ -50,13 +53,19 @@ async def skip_command(client: Client, message: Message):
                 )
             )
         else:
+            # Create keyboard with close button
+            keyboard = InlineKeyboardMarkup([
+                [
+                    InlineKeyboardButton("ᴄʟσꜱє", callback_data="close_playing")
+                ]
+            ])
+            
             await message.reply_text(
-                f"<blockquote>"
-                f"<b>⏭️ δᴋɪᴩᴩєᴅ! ❞</b>\n\n"
-                f"<b>📋 Queue is now empty.</b>\n"
-                f"<b>Use /play to add more songs.</b>"
-                f"</blockquote>",
-                parse_mode=ParseMode.HTML
+                f"➻ 𝖲𝗍𝗋𝖾𝖺𝗆 𝖲𝗄𝗂𝗉𝗉𝖾𝖽 🎄\n"
+                f"│\n"
+                f"└𝖡𝗗 : {user_mention}🥀\n\n"
+                f"𝖭𝗈 𝖬𝗈𝗋𝖾 𝖰𝗎𝖾𝗎𝖾𝖽 𝖳𝗋𝖺𝖼𝗄𝗌 𝖨𝗇 ᴛɪᴛᴀɴɪᴄ ʟᴇɢᴀᴄʏ , 𝖫𝖾𝖺𝗏𝗂𝗇𝗀 𝖵𝗂𝖽𝖾𝗈𝖢𝗁𝖺𝗍 .",
+                reply_markup=keyboard
             )
         
         logger.info(f"Song skipped by {message.from_user.id} in {chat_id}")

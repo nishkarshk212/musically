@@ -159,22 +159,25 @@ async def play_command(client: Client, message: Message):
             )
             return
         
+        # PERF PRIORITY: Show searching message IMMEDIATELY (approx 100-200ms)
+        status_msg = await message.reply_text("🔍 **δєᴧʀᴄʜɪηɢ...**")
+
         # Check if query is URL and process asynchronously for speed
         is_url = query.startswith(("http://", "https://"))
         
-        # Start search/extraction immediately
+        # Start search/extraction
         if is_url:
             song_info = await downloader.extract_info(query)
         else:
             song_info = await downloader.search_and_download(query)
             
         if not song_info:
-            await message.reply_text(ERROR_NO_RESULTS.format(query=query))
+            await status_msg.edit_text(ERROR_NO_RESULTS.format(query=query))
             return
         
         # Check queue size
         if queue.size() >= MAX_QUEUE_SIZE:
-            await message.reply_text(ERROR_QUEUE_FULL.format(max_size=MAX_QUEUE_SIZE))
+            await status_msg.edit_text(ERROR_QUEUE_FULL.format(max_size=MAX_QUEUE_SIZE))
             return
         
         # Create Song object
@@ -200,7 +203,7 @@ async def play_command(client: Client, message: Message):
             # Create keyboard with close button
             keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟσꜱє", callback_data="close_playing")]])
             
-            await message.reply_text(
+            await status_msg.edit_text(
                 SUCCESS_ADDED_TO_QUEUE.format(
                     title=song.title,
                     duration=format_time(song.duration),
@@ -211,19 +214,25 @@ async def play_command(client: Client, message: Message):
                 parse_mode=ParseMode.HTML
             )
         else:
-            # NOT PLAYING - Join VC and play IMMEDIATELY without "Queued" message
+            # NOT PLAYING - Join VC and play IMMEDIATELY
             if not call_manager:
-                await message.reply_text("❌ Call manager not initialized!")
+                await status_msg.edit_text("❌ Call manager not initialized!")
                 return
             
             try:
-                # Set as current song IMMEDIATELY (do not add to queue yet)
+                # Set as current song IMMEDIATELY
                 queue.current_song = song
                 queue.is_playing = True
+                
+                # Update status for user
+                await status_msg.edit_text("🚀 **ᴊσɪηɪηɢ ᴠσɪᴄє ᴄʜᴧᴛ...**")
                 
                 # Join voice chat and start playback
                 await call_manager.join_voice_chat(chat_id, chat_username)
                 await call_manager.play_song(chat_id, song)
+                
+                # Delete the status message
+                await status_msg.delete()
                 
                 # Send playing message in background (non-blocking)
                 asyncio.create_task(
@@ -236,7 +245,7 @@ async def play_command(client: Client, message: Message):
                 )
                 
             except Exception as play_error:
-                await message.reply_text(f"❌ Failed to play: {str(play_error)}")
+                await status_msg.edit_text(f"❌ Failed to play: {str(play_error)}")
                 raise
         
         logger.info(f"Play command executed by {message.from_user.id} in {chat_id}")
