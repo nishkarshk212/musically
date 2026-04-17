@@ -266,7 +266,7 @@ class BotApp:
         from handlers.settings import (
             settings_callback, playmode_callback, quality_callback, language_callback,
             volume_callback, authmode_callback, videomode_callback, cleanmode_callback,
-            logging_callback, skipmode_callback
+            logging_callback, skipmode_callback, set_mode_callback
         )
         
         self.app.add_handler(CallbackQueryHandler(help_callback, regex("^help_commands$")))
@@ -274,6 +274,9 @@ class BotApp:
         self.app.add_handler(CallbackQueryHandler(admin_callback, regex("^cmd_admin$")))
         self.app.add_handler(CallbackQueryHandler(back_to_help_callback, regex("^back_to_help$")))
         self.app.add_handler(CallbackQueryHandler(broadcast_callback_handler, regex("^bc_")))
+        
+        # Mode settings callbacks
+        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^(pm_|sm_)")))
         
         # Category callback handlers
         self.app.add_handler(CallbackQueryHandler(auth_callback, regex("^cmd_auth$")))

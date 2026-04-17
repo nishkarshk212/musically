@@ -5,18 +5,20 @@ Custom Decorators for Bot Handlers
 from functools import wraps
 from pyrogram.types import Message
 from config import OWNER_ID, SUDOERS
+from database.mongodb import db_manager
 import logging
 import time
 
 logger = logging.getLogger(__name__)
 
-# Cache for admin checks to reduce API calls
+# Cache for admin checks and settings to reduce API/DB calls
 _admin_cache = {}
+_settings_cache = {}
 CACHE_TTL = 300  # 5 minutes cache
 
 
 def admin_check(func):
-    """Decorator to check if user is admin in the chat"""
+    """Decorator to check if user is admin in the chat, with settings override"""
     @wraps(func)
     async def wrapper(client, message: Message, *args, **kwargs):
         try:
@@ -24,14 +26,35 @@ def admin_check(func):
             if message.chat.type == "private":
                 return await func(client, message, *args, **kwargs)
             
-            # Get user ID
+            # Get user ID and chat ID
             user_id = message.from_user.id
             chat_id = message.chat.id
             
-            # Check if user is owner or sudoer
+            # Check if user is owner or sudoer - they bypass everything
             if user_id in OWNER_ID or user_id in SUDOERS:
                 return await func(client, message, *args, **kwargs)
             
+            # Determine command type for setting check
+            # Skip commands use /skip, /next, etc.
+            # Play commands use /play, /vplay, etc.
+            command = message.command[0].lower() if message.command else ""
+            is_skip_cmd = command in ["skip", "next"]
+            is_play_cmd = command in ["play", "vplay", "playlist"]
+            
+            # Check settings for "Everyone" mode
+            settings = await db_manager.get_chat_settings(chat_id)
+            
+            if is_skip_cmd:
+                skip_mode = settings.get("skip_mode", "admins")
+                if skip_mode == "everyone":
+                    return await func(client, message, *args, **kwargs)
+            
+            if is_play_cmd:
+                play_mode = settings.get("play_mode", "everyone") # Default play mode is everyone
+                if play_mode == "everyone":
+                    return await func(client, message, *args, **kwargs)
+            
+            # If not "everyone" mode, proceed with admin check
             # Check cache first
             cache_key = f"{chat_id}:{user_id}"
             current_time = time.time()
@@ -42,15 +65,12 @@ def admin_check(func):
                         return await func(client, message, *args, **kwargs)
                     else:
                         await message.reply_text(
-                            "❌ You need to be an admin to use this command!"
+                            "❌ ᴛʜɪꜱ ᴄσϻϻᴧηᴅ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ σηʟʏ!"
                         )
                         return
             
             # Get chat member status (API call)
             member = await message.chat.get_member(user_id)
-            
-            # Check if user is admin or creator
-            # In Pyrogram 2.x, status is a string: 'administrator', 'creator', 'member', etc.
             is_admin = member.status in ['administrator', 'creator']
             
             # Update cache
@@ -60,7 +80,7 @@ def admin_check(func):
                 return await func(client, message, *args, **kwargs)
             else:
                 await message.reply_text(
-                    "❌ You need to be an admin to use this command!"
+                    "❌ ᴛʜɪꜱ ᴄσϻϻᴧηᴅ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ σηʟʏ!"
                 )
                 return
                 

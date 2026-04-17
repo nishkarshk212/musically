@@ -5,8 +5,7 @@ Manages bot settings and configuration
 
 import random
 from pyrogram import Client
-from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
-from pyrogram.types import InputMediaPhoto
+from database.mongodb import db_manager
 
 # Settings panel images (same as start images)
 SETTINGS_IMAGES = [
@@ -27,6 +26,15 @@ SETTINGS_IMAGES = [
 async def settings_callback(client: Client, callback_query: CallbackQuery):
     """Handle settings button callback"""
     try:
+        chat_id = callback_query.message.chat.id
+        user_id = callback_query.from_user.id
+        
+        # Check if user is admin
+        member = await callback_query.message.chat.get_member(user_id)
+        if member.status not in ['administrator', 'creator']:
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
         # Settings message text
         settings_text = """
 ╭───────────────────▣
@@ -84,16 +92,25 @@ async def settings_callback(client: Client, callback_query: CallbackQuery):
 async def playmode_callback(client: Client, callback_query: CallbackQuery):
     """Handle play mode settings"""
     try:
-        playmode_text = """
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_mode = settings.get("play_mode", "everyone")
+        
+        # Toggle checkmarks
+        e_tick = " ✅" if current_mode == "everyone" else ""
+        a_tick = " ✅" if current_mode == "admins" else ""
+        au_tick = " ✅" if current_mode == "auth" else ""
+
+        playmode_text = f"""
 ╭───────────────────▣
 │❍ **ᴘʟᴀʏ ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │🎵 **ᴡʜᴏ ᴄᴀɴ ᴘʟᴀʏ sᴏɴɢs:**
 │
-│❍ **ᴇᴠᴇʀʏᴏɴᴇ** - ᴀɴʏᴏɴᴇ ᴄᴀɴ ᴘʟᴀʏ
-│❍ **ᴀᴅᴍɪɴs** - ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴘʟᴀʏ
-│❍ **ᴀᴜᴛʜ ᴜsᴇʀs** - ᴏɴʟʏ ᴀᴜᴛʜ ᴜsᴇʀs
+│❍ **ᴇᴠᴇʀʏᴏɴᴇ**{e_tick}
+│❍ **ᴀᴅᴍɪɴs**{a_tick}
+│❍ **ᴀᴜᴛʜ ᴜsᴇʀs**{au_tick}
 │
 ╰───────────────────▣
 """
@@ -102,11 +119,11 @@ async def playmode_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• ᴇᴠᴇʀʏᴏɴᴇ •", callback_data="playmode_everyone"),
-                InlineKeyboardButton("• ᴀᴅᴍɪɴs •", callback_data="playmode_admins")
+                InlineKeyboardButton(f"• ᴇᴠᴇʀʏᴏɴᴇ{e_tick} •", callback_data="pm_everyone"),
+                InlineKeyboardButton(f"• ᴀᴅᴍɪɴs{a_tick} •", callback_data="pm_admins")
             ],
             [
-                InlineKeyboardButton("• ᴀᴜᴛʜ ᴜsᴇʀs •", callback_data="playmode_auth")
+                InlineKeyboardButton(f"• ᴀᴜᴛʜ ᴜsᴇʀs{au_tick} •", callback_data="pm_auth")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
@@ -131,16 +148,25 @@ async def playmode_callback(client: Client, callback_query: CallbackQuery):
 async def skipmode_callback(client: Client, callback_query: CallbackQuery):
     """Handle skip mode settings"""
     try:
-        skipmode_text = """
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_mode = settings.get("skip_mode", "admins")
+        
+        # Toggle checkmarks
+        e_tick = " ✅" if current_mode == "everyone" else ""
+        a_tick = " ✅" if current_mode == "admins" else ""
+        au_tick = " ✅" if current_mode == "auth" else ""
+
+        skipmode_text = f"""
 ╭───────────────────▣
 │❍ **ꜱᴋɪᴘ ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │⏭️ **ᴡʜᴏ ᴄᴀɴ sᴋɪᴘ sᴏɴɢs:**
 │
-│❍ **ᴇᴠᴇʀʏᴏɴᴇ** - ᴀɴʏᴏɴᴇ ᴄᴀɴ sᴋɪᴘ
-│❍ **ᴀᴅᴍɪɴs** - ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ sᴋɪᴘ
-│❍ **ᴀᴜᴛʜ ᴜsᴇʀs** - ᴏɴʟʏ ᴀᴜᴛʜ ᴜsᴇʀs
+│❍ **ᴇᴠᴇʀʏᴏɴᴇ**{e_tick}
+│❍ **ᴀᴅᴍɪɴs**{a_tick}
+│❍ **ᴀᴜᴛʜ ᴜsᴇʀs**{au_tick}
 │
 ╰───────────────────▣
 """
@@ -149,11 +175,11 @@ async def skipmode_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• ᴇᴠᴇʀʏᴏɴᴇ •", callback_data="skipmode_everyone"),
-                InlineKeyboardButton("• ᴀᴅᴍɪɴs •", callback_data="skipmode_admins")
+                InlineKeyboardButton(f"• ᴇᴠᴇʀʏᴏɴᴇ{e_tick} •", callback_data="sm_everyone"),
+                InlineKeyboardButton(f"• ᴀᴅᴍɪɴs{a_tick} •", callback_data="sm_admins")
             ],
             [
-                InlineKeyboardButton("• ᴀᴜᴛʜ ᴜsᴇʀs •", callback_data="skipmode_auth")
+                InlineKeyboardButton(f"• ᴀᴜᴛʜ ᴜsᴇʀs{au_tick} •", callback_data="sm_auth")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
@@ -173,6 +199,28 @@ async def skipmode_callback(client: Client, callback_query: CallbackQuery):
         
     except Exception as e:
         await callback_query.answer("Error loading skip mode settings", show_alert=True)
+
+
+async def set_mode_callback(client: Client, callback_query: CallbackQuery):
+    """Handle setting individual modes"""
+    try:
+        chat_id = callback_query.message.chat.id
+        data = callback_query.data
+        
+        if data.startswith("pm_"):
+            mode = data.replace("pm_", "")
+            await db_manager.save_chat_settings(chat_id, {"play_mode": mode})
+            await callback_query.answer(f"✅ Play mode set to {mode}!", show_alert=True)
+            await playmode_callback(client, callback_query)
+            
+        elif data.startswith("sm_"):
+            mode = data.replace("sm_", "")
+            await db_manager.save_chat_settings(chat_id, {"skip_mode": mode})
+            await callback_query.answer(f"✅ Skip mode set to {mode}!", show_alert=True)
+            await skipmode_callback(client, callback_query)
+            
+    except Exception as e:
+        await callback_query.answer("Error saving setting", show_alert=True)
 
 
 async def quality_callback(client: Client, callback_query: CallbackQuery):

@@ -11,7 +11,7 @@ from core.call_manager import call_manager
 from utils.downloader import downloader
 from utils.thumbnail_generator import create_thumbnail
 from utils.formatter import format_time, format_views
-from utils.decorators import bot_can_manage_vc
+from utils.decorators import bot_can_manage_vc, admin_check
 from utils.strings import build_playing_message, SUCCESS_ADDED_TO_QUEUE, ERROR_NO_RESULTS, ERROR_QUEUE_FULL, SUPPORT_CHANNEL_USERNAME
 from utils.html_helper import blockquote
 from config import MAX_QUEUE_SIZE
@@ -113,6 +113,7 @@ async def send_playing_message(client: Client, chat_id: int, song, song_info=Non
         logger.error(f"Failed to send playing message: {e}")
 
 
+@admin_check
 @bot_can_manage_vc
 async def play_command(client: Client, message: Message):
     """Handle /play command"""
