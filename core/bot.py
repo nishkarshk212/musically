@@ -163,7 +163,7 @@ class BotApp:
         from handlers.admin import start_command, help_command
         from handlers.callback import help_callback, back_to_start_callback, admin_callback, back_to_help_callback
         from handlers.auth import auth_command, unauth_command, authusers_command
-        from handlers.broadcast import broadcast_command
+        from handlers.broadcast import broadcast_command, broadcast_callback_handler, broadcast_message_handler
         from handlers.blacklist import blacklistchat_command, whitelistchat_command, blacklistedchat_command
         from handlers.channel import cplay_command, cvplay_command, channelplay_command
         from handlers.gban import gban_command, ungban_command, gbannedusers_command
@@ -208,6 +208,7 @@ class BotApp:
         
         # Broadcast command
         self.app.add_handler(MessageHandler(broadcast_command, command("broadcast")))
+        self.app.add_handler(MessageHandler(broadcast_message_handler, filters.private & ~command(["broadcast"])))
         
         # Blacklist commands
         self.app.add_handler(MessageHandler(blacklistchat_command, command("blacklistchat")))
@@ -272,6 +273,7 @@ class BotApp:
         self.app.add_handler(CallbackQueryHandler(back_to_start_callback, regex("^back_to_start$")))
         self.app.add_handler(CallbackQueryHandler(admin_callback, regex("^cmd_admin$")))
         self.app.add_handler(CallbackQueryHandler(back_to_help_callback, regex("^back_to_help$")))
+        self.app.add_handler(CallbackQueryHandler(broadcast_callback_handler, regex("^bc_")))
         
         # Category callback handlers
         self.app.add_handler(CallbackQueryHandler(auth_callback, regex("^cmd_auth$")))
