@@ -99,8 +99,8 @@ async def help_callback(client: Client, callback_query: CallbackQuery):
 async def back_to_start_callback(client: Client, callback_query: CallbackQuery):
     """Handle back button from help panel"""
     try:
-        # Get user mention
-        user_mention = callback_query.message.from_user.mention
+        # Get user mention - use the one who clicked the button
+        user_mention = callback_query.from_user.mention
         
         # Get bot info
         bot_info = await client.get_me()
@@ -123,13 +123,15 @@ async def back_to_start_callback(client: Client, callback_query: CallbackQuery):
         # Randomly select a start image
         selected_image = random.choice(HELP_IMAGES)
         
-        # Create inline keyboard with buttons
+        # Create inline keyboard with buttons - VERTICAL for mobile
         keyboard = InlineKeyboardMarkup([
             [
                 InlineKeyboardButton(
                     "✦ ᴧᴅᴅ ϻє ✦",
                     url=f"https://t.me/{bot_username}?startgroup=true"
-                ),
+                )
+            ],
+            [
                 InlineKeyboardButton(
                     "❖ ʜєʟᴘ ᴧηᴅ ᴄσϻϻᴧηᴅ ❖",
                     callback_data="help_commands"
@@ -143,20 +145,20 @@ async def back_to_start_callback(client: Client, callback_query: CallbackQuery):
             ]
         ])
         
-        # Edit the same message
+        # Edit the same message in one call with correct parse mode
         await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=start_text,
+            media=InputMediaPhoto(
+                media=selected_image,
+                caption=start_text,
+                parse_mode=ParseMode.HTML
+            ),
             reply_markup=keyboard
         )
         
-        await callback_query.answer("Back to Start", show_alert=False)
+        await callback_query.answer("Back to Home Panel", show_alert=False)
         
     except Exception as e:
-        await callback_query.answer("Error", show_alert=True)
+        await callback_query.answer("Error returning to start", show_alert=True)
 
 
 async def admin_callback(client: Client, callback_query: CallbackQuery):

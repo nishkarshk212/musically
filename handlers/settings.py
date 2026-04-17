@@ -7,6 +7,7 @@ import random
 from pyrogram import Client
 from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto
 from database.mongodb import db_manager
+from config import OWNER_ID, SUDOERS
 
 # Settings panel images (same as start images)
 SETTINGS_IMAGES = [
@@ -23,16 +24,29 @@ SETTINGS_IMAGES = [
     "https://i.ibb.co/prj9V4vz/anime-character-traveling-2.jpg",
 ]
 
+async def is_admin_check(callback_query: CallbackQuery):
+    """Utility to check if user is admin or owner/sudoer"""
+    user_id = callback_query.from_user.id
+    
+    # Owner and Sudoers bypass everything
+    if user_id in OWNER_ID or user_id in SUDOERS:
+        return True
+        
+    # Private chat - only owner/sudoer allowed in settings usually
+    if callback_query.message.chat.type == "private":
+        return user_id in OWNER_ID or user_id in SUDOERS
+        
+    # Group chat - check admin status
+    try:
+        member = await callback_query.message.chat.get_member(user_id)
+        return member.status in ['administrator', 'creator']
+    except Exception:
+        return False
 
 async def settings_callback(client: Client, callback_query: CallbackQuery):
     """Handle settings button callback"""
     try:
-        chat_id = callback_query.message.chat.id
-        user_id = callback_query.from_user.id
-        
-        # Check if user is admin
-        member = await callback_query.message.chat.get_member(user_id)
-        if member.status not in ['administrator', 'creator']:
+        if not await is_admin_check(callback_query):
             await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
             return
 
@@ -93,6 +107,10 @@ async def settings_callback(client: Client, callback_query: CallbackQuery):
 async def playmode_callback(client: Client, callback_query: CallbackQuery):
     """Handle play mode settings"""
     try:
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
         chat_id = callback_query.message.chat.id
         settings = await db_manager.get_chat_settings(chat_id)
         current_mode = settings.get("play_mode", "everyone")
@@ -149,6 +167,10 @@ async def playmode_callback(client: Client, callback_query: CallbackQuery):
 async def skipmode_callback(client: Client, callback_query: CallbackQuery):
     """Handle skip mode settings"""
     try:
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
         chat_id = callback_query.message.chat.id
         settings = await db_manager.get_chat_settings(chat_id)
         current_mode = settings.get("skip_mode", "admins")
@@ -205,6 +227,10 @@ async def skipmode_callback(client: Client, callback_query: CallbackQuery):
 async def set_mode_callback(client: Client, callback_query: CallbackQuery):
     """Handle setting individual modes"""
     try:
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
         chat_id = callback_query.message.chat.id
         data = callback_query.data
         
@@ -220,6 +246,36 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
             await callback_query.answer(f"✅ Skip mode set to {mode}!", show_alert=True)
             await skipmode_callback(client, callback_query)
             
+        elif data.startswith("quality_"):
+            quality = data.replace("quality_", "")
+            await db_manager.save_chat_settings(chat_id, {"quality": quality})
+            await callback_query.answer(f"✅ Quality set to {quality}!", show_alert=True)
+            await quality_callback(client, callback_query)
+            
+        elif data.startswith("lang_"):
+            lang = data.replace("lang_", "")
+            await db_manager.save_chat_settings(chat_id, {"language": lang})
+            await callback_query.answer(f"✅ Language set to {lang}!", show_alert=True)
+            await language_callback(client, callback_query)
+            
+        elif data.startswith("vol_"):
+            vol = int(data.replace("vol_", ""))
+            await db_manager.save_chat_settings(chat_id, {"volume": vol})
+            await callback_query.answer(f"✅ Volume set to {vol}%!", show_alert=True)
+            await volume_callback(client, callback_query)
+            
+        elif data.startswith("clean_"):
+            status = data.replace("clean_", "")
+            await db_manager.save_chat_settings(chat_id, {"clean_mode": status})
+            await callback_query.answer(f"✅ Clean mode {status}d!", show_alert=True)
+            await cleanmode_callback(client, callback_query)
+            
+        elif data.startswith("log_"):
+            status = data.replace("log_", "")
+            await db_manager.save_chat_settings(chat_id, {"logging": status})
+            await callback_query.answer(f"✅ Logging {status}d!", show_alert=True)
+            await logging_callback(client, callback_query)
+
     except Exception as e:
         await callback_query.answer("Error saving setting", show_alert=True)
 
@@ -227,15 +283,31 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
 async def quality_callback(client: Client, callback_query: CallbackQuery):
     """Handle quality settings"""
     try:
-        quality_text = """
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_q = settings.get("quality", "medium")
+        
+        # Checkmarks
+        l_tick = " ✅" if current_q == "low" else ""
+        m_tick = " ✅" if current_q == "medium" else ""
+        h_tick = " ✅" if current_q == "high" else ""
+        s_tick = " ✅" if current_q == "studio" else ""
+
+        quality_text = f"""
 ╭───────────────────▣
 │❍ **ǫᴜᴀʟɪᴛʏ ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │🎧 **sᴇʟᴇᴄᴛ ᴀᴜᴅɪᴏ ǫᴜᴀʟɪᴛʏ:**
 │
-│❍ /quality - ᴄʜᴀɴɢᴇ ᴀᴜᴅɪᴏ ǫᴜᴀʟɪᴛʏ
-│   ʟᴇᴠᴇʟs: ʟᴏᴡ, ϻᴇᴅɪᴜϻ, ʜɪɢʜ
+│❍ **ʟᴏᴡ**{l_tick}
+│❍ **ϻᴇᴅɪᴜϻ**{m_tick}
+│❍ **ʜɪɢʜ**{h_tick}
+│❍ **ꜱᴛᴜᴅɪᴏ**{s_tick}
 │
 ╰───────────────────▣
 """
@@ -244,12 +316,12 @@ async def quality_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• ʟᴏᴡ •", callback_data="quality_low"),
-                InlineKeyboardButton("• ϻᴇᴅɪᴜϻ •", callback_data="quality_medium")
+                InlineKeyboardButton(f"• ʟᴏᴡ{l_tick} •", callback_data="quality_low"),
+                InlineKeyboardButton(f"• ϻᴇᴅɪᴜϻ{m_tick} •", callback_data="quality_medium")
             ],
             [
-                InlineKeyboardButton("• ʜɪɢʜ •", callback_data="quality_high"),
-                InlineKeyboardButton("• ꜱᴛᴜᴅɪᴏ •", callback_data="quality_studio")
+                InlineKeyboardButton(f"• ʜɪɢʜ{h_tick} •", callback_data="quality_high"),
+                InlineKeyboardButton(f"• ꜱᴛᴜᴅɪᴏ{s_tick} •", callback_data="quality_studio")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
@@ -274,15 +346,26 @@ async def quality_callback(client: Client, callback_query: CallbackQuery):
 async def language_callback(client: Client, callback_query: CallbackQuery):
     """Handle language settings"""
     try:
-        language_text = """
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_lang = settings.get("language", "en")
+        
+        en_tick = " ✅" if current_lang == "en" else ""
+        hi_tick = " ✅" if current_lang == "hi" else ""
+
+        language_text = f"""
 ╭───────────────────▣
 │❍ **ʟᴀηɢᴜᴀɢє ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │🌐 **sᴇʟᴇᴄᴛ ʙᴏᴛ ʟᴀɴɢᴜᴀɢᴇ:**
 │
-│❍ /language - ᴄʜᴀɴɢᴇ ʟᴀɴɢᴜᴀɢᴇ
-│   sᴜᴘᴘᴏʀᴛᴇᴅ: ᴇɴɢʟɪsʜ, ʜɪɴᴅɪ
+│❍ **ᴇɴɢʟɪsʜ**{en_tick}
+│❍ **ʜɪɴᴅɪ**{hi_tick}
 │
 ╰───────────────────▣
 """
@@ -291,8 +374,8 @@ async def language_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• ᴇɴɢʟɪsʜ •", callback_data="lang_en"),
-                InlineKeyboardButton("• ʜɪɴᴅɪ •", callback_data="lang_hi")
+                InlineKeyboardButton(f"• ᴇɴɢʟɪsʜ{en_tick} •", callback_data="lang_en"),
+                InlineKeyboardButton(f"• ʜɪɴᴅɪ{hi_tick} •", callback_data="lang_hi")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
@@ -320,15 +403,30 @@ async def language_callback(client: Client, callback_query: CallbackQuery):
 async def volume_callback(client: Client, callback_query: CallbackQuery):
     """Handle volume settings"""
     try:
-        volume_text = """
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_vol = settings.get("volume", 100)
+        
+        v50_tick = " ✅" if current_vol == 50 else ""
+        v100_tick = " ✅" if current_vol == 100 else ""
+        v150_tick = " ✅" if current_vol == 150 else ""
+        v200_tick = " ✅" if current_vol == 200 else ""
+
+        volume_text = f"""
 ╭───────────────────▣
 │❍ **ᴠσʟᴜϻє ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │🔊 **sᴇᴛ ᴅᴇꜰᴀᴜʟᴛ ᴠᴏʟᴜᴍᴇ:**
 │
-│❍ /volume [1-200] - sᴇᴛ ᴠᴏʟᴜᴍᴇ
-│   ᴅᴇꜰᴀᴜʟᴛ: 100
+│❍ **50%**{v50_tick}
+│❍ **100%**{v100_tick}
+│❍ **150%**{v150_tick}
+│❍ **200%**{v200_tick}
 │
 ╰───────────────────▣
 """
@@ -337,12 +435,12 @@ async def volume_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• 50% •", callback_data="vol_50"),
-                InlineKeyboardButton("• 100% •", callback_data="vol_100")
+                InlineKeyboardButton(f"• 50%{v50_tick} •", callback_data="vol_50"),
+                InlineKeyboardButton(f"• 100%{v100_tick} •", callback_data="vol_100")
             ],
             [
-                InlineKeyboardButton("• 150% •", callback_data="vol_150"),
-                InlineKeyboardButton("• 200% •", callback_data="vol_200")
+                InlineKeyboardButton(f"• 150%{v150_tick} •", callback_data="vol_150"),
+                InlineKeyboardButton(f"• 200%{v200_tick} •", callback_data="vol_200")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
@@ -458,15 +556,26 @@ async def videomode_callback(client: Client, callback_query: CallbackQuery):
 async def cleanmode_callback(client: Client, callback_query: CallbackQuery):
     """Handle clean mode settings"""
     try:
-        cleanmode_text = """
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_clean = settings.get("clean_mode", "enable")
+        
+        en_tick = " ✅" if current_clean == "enable" else ""
+        dis_tick = " ✅" if current_clean == "disable" else ""
+
+        cleanmode_text = f"""
 ╭───────────────────▣
-│❍ **ᴄʟєᴀη ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
+│❍ **ᴄʟєᴧη ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │🧹 **ᴄʟᴇᴀɴ ᴍᴏᴅᴇ sᴇᴛᴛɪɴɢs:**
 │
-│❍ ᴀᴜᴛᴏ ᴅᴇʟᴇᴛᴇ ʙᴏᴛ ᴍᴇssᴀɢᴇs
-│   ᴀғᴛᴇʀ ᴘʟᴀʏɪɴɢ sᴏɴɢs
+│❍ **ᴇɴᴀʙʟᴇ**{en_tick}
+│❍ **ᴅɪsᴀʙʟᴇ**{dis_tick}
 │
 ╰───────────────────▣
 """
@@ -475,8 +584,8 @@ async def cleanmode_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• ᴇɴᴀʙʟᴇ •", callback_data="clean_enable"),
-                InlineKeyboardButton("• ᴅɪsᴀʙʟᴇ •", callback_data="clean_disable")
+                InlineKeyboardButton(f"• ᴇɴᴀʙʟᴇ{en_tick} •", callback_data="clean_enable"),
+                InlineKeyboardButton(f"• ᴅɪsᴀʙʟᴇ{dis_tick} •", callback_data="clean_disable")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
@@ -501,15 +610,26 @@ async def cleanmode_callback(client: Client, callback_query: CallbackQuery):
 async def logging_callback(client: Client, callback_query: CallbackQuery):
     """Handle logging settings"""
     try:
-        logging_text = """
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_log = settings.get("logging", "enable")
+        
+        en_tick = " ✅" if current_log == "enable" else ""
+        dis_tick = " ✅" if current_log == "disable" else ""
+
+        logging_text = f"""
 ╭───────────────────▣
 │❍ **ʟσɢɢɪηɢ ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │📝 **ʟᴏɢɢɪɴɢ sᴇᴛᴛɪɴɢs:**
 │
-│❍ ᴇɴᴀʙʟᴇ/ᴅɪsᴀʙʟᴇ ʟᴏɢɢɪɴɢ
-│   ɪɴ ʟᴏɢ ɢʀᴏᴜᴘ/ᴄʜᴀɴɴᴇʟ
+│❍ **ᴇɴᴀʙʟᴇ**{en_tick}
+│❍ **ᴅɪsᴀʙʟᴇ**{dis_tick}
 │
 ╰───────────────────▣
 """
@@ -518,8 +638,8 @@ async def logging_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• ᴇɴᴀʙʟᴇ •", callback_data="log_enable"),
-                InlineKeyboardButton("• ᴅɪsᴀʙʟᴇ •", callback_data="log_disable")
+                InlineKeyboardButton(f"• ᴇɴᴀʙʟᴇ{en_tick} •", callback_data="log_enable"),
+                InlineKeyboardButton(f"• ᴅɪsᴀʙʟᴇ{dis_tick} •", callback_data="log_disable")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
