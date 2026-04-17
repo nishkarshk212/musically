@@ -158,18 +158,22 @@ class CallManager:
             # Small delay to ensure file is fully written (prevents audio breaking)
             await asyncio.sleep(0.5)
             
-            # Create media stream - let PyTgCalls handle format conversion automatically
-            # For Opus/WebM files, minimal ffmpeg parameters work best
+            # Create media stream - HIGH quality is often more stable for voice chats than STUDIO
             stream = MediaStream(
                 song.file_path,
-                audio_parameters=AudioQuality.STUDIO
+                audio_parameters=AudioQuality.HIGH
             )
             
             logger.info(f"Stream created for {chat_id}, calling play()...")
-            logger.info(f"Stream details: file={song.file_path}, audio_quality=STUDIO")
+            logger.info(f"Stream details: file={song.file_path}, audio_quality=HIGH")
             
             # PyTgCalls v2: play() will automatically join the voice chat if not already in one
             await call.play(chat_id, stream)
+            
+            # Send playing message if this was an automatic play (not from play_command)
+            # We check if it's the current song in queue
+            # Actually, play_command handles its own send_playing_message for the first song
+            # But for auto-playing next song, we need to send it here or in handle_stream_ended
             
             logger.info(f"✅ play() successful for {chat_id} - assistant should now be in voice chat")
             logger.info(f"PyTgCalls active: {call}, Chat active: {self.active_chats.get(chat_id, False)}")
@@ -298,25 +302,42 @@ class CallManager:
         return queue.current_song
     
     async def handle_stream_ended(self, chat_id: int, update: Update):
-        """Handle stream ended event - auto leave voice chat when queue is empty"""
+        """Handle stream ended event - play next song or auto leave"""
         try:
-            # PyTgCalls v2.x: Update handling is different
-            # We'll check queue status directly without RawUpdate
             queue = queue_manager.get_queue(chat_id)
             
-            # If queue is empty and no more songs, leave voice chat
-            if queue.is_empty() and not queue.current_song:
+            # Skip current song and get next
+            next_song = queue.skip_song()
+            
+            if next_song:
+                logger.info(f"Stream ended for {chat_id}, playing next song: {next_song.title}")
+                await self.play_song(chat_id, next_song)
+                
+                # Notify about the next song
+                from core.bot import bot_app
+                from handlers.play import send_playing_message
+                
+                asyncio.create_task(
+                    send_playing_message(
+                        client=bot_app.app,
+                        chat_id=chat_id,
+                        song=next_song
+                    )
+                )
+            else:
+                # If queue is empty and no more songs, leave voice chat
                 logger.info(f"Queue empty for chat {chat_id}, auto-leaving voice chat")
-                await asyncio.sleep(15)  # Wait 15 seconds before leaving (increased from 5s)
+                await asyncio.sleep(15)  # Wait 15 seconds before leaving
                 
                 # Double check queue is still empty
-                if queue.is_empty():
+                if queue.is_empty() and not queue.current_song:
                     await self.leave_voice_chat(chat_id)
                     queue.clear_queue()
                     logger.info(f"Auto-left voice chat in {chat_id}")
                     
         except Exception as e:
             logger.error(f"Error handling stream ended in {chat_id}: {e}")
+            logger.exception("Traceback:")
 
 
 # Global call manager instance (will be initialized in bot.py)

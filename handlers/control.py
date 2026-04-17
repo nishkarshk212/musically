@@ -5,6 +5,7 @@ Handles skip, pause, resume, stop, and volume commands
 
 from pyrogram import Client
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from pyrogram.enums import ParseMode
 from core.queue import queue_manager
 from core.call_manager import call_manager
 from utils.formatter import format_time
@@ -30,17 +31,31 @@ async def skip_command(client: Client, message: Message):
         next_song = await call_manager.skip(chat_id)
         
         if next_song:
+            # Send simple skip message
             await message.reply_text(
-                f"⏭️ **Skipped!**\n\n"
-                f"🎵 **Now Playing:** {next_song.title}\n"
-                f"⏱ **Duration:** {format_time(next_song.duration)}\n"
-                f"👤 **Requested by:** {next_song.requester}"
+                f"<blockquote>"
+                f"<b>⏭️ δᴋɪᴩᴩєᴅ! ❞</b>"
+                f"</blockquote>",
+                parse_mode=ParseMode.HTML
+            )
+            
+            # Send the Now Playing message of the current (next) song
+            from handlers.play import send_playing_message
+            asyncio.create_task(
+                send_playing_message(
+                    client=client,
+                    chat_id=chat_id,
+                    song=next_song
+                )
             )
         else:
             await message.reply_text(
-                "⏭️ **Skipped!**\n\n"
-                "📋 Queue is now empty.\n"
-                "Use /play to add more songs."
+                f"<blockquote>"
+                f"<b>⏭️ δᴋɪᴩᴩєᴅ! ❞</b>\n\n"
+                f"<b>📋 Queue is now empty.</b>\n"
+                f"<b>Use /play to add more songs.</b>"
+                f"</blockquote>",
+                parse_mode=ParseMode.HTML
             )
         
         logger.info(f"Song skipped by {message.from_user.id} in {chat_id}")
@@ -63,8 +78,11 @@ async def pause_command(client: Client, message: Message):
         await call_manager.pause(chat_id)
         
         await message.reply_text(
-            "⏸️ **Playback Paused!**\n\n"
-            "Use /resume to continue playing."
+            f"<blockquote>"
+            f"<b>⏸️ ᴘʟᴧʏʙᴧᴄᴋ ᴘᴧᴜꜱєᴅ! ❞</b>\n\n"
+            f"<b>Use /resume to continue playing.</b>"
+            f"</blockquote>",
+            parse_mode=ParseMode.HTML
         )
         
         logger.info(f"Playback paused by {message.from_user.id} in {chat_id}")
@@ -89,8 +107,13 @@ async def resume_command(client: Client, message: Message):
             await call_manager.resume(chat_id)
             
             await message.reply_text(
-                "▶️ **Playback Resumed!**\n\n"
-                f"🎵 **Playing:** {queue.current_song.title}"
+                f"<blockquote>"
+                f"<b>▶️ ᴘʟᴧʏʙᴧᴄᴋ ʀєꜱᴜϻєᴅ! ❞</b>\n\n"
+                f"<b>❍ TITLE :</b> {queue.current_song.title} <b>❞</b>\n"
+                f"<b>❍ DURΛTIση :</b> {format_time(queue.current_song.duration)} <b>MIηUTeS</b>\n"
+                f"<b>❍ BY :</b> {queue.current_song.requester}"
+                f"</blockquote>",
+                parse_mode=ParseMode.HTML
             )
         else:
             await message.reply_text("❌ No paused song to resume!")
@@ -126,10 +149,12 @@ async def stop_command(client: Client, message: Message):
         ])
         
         await message.reply_text(
-            f"➻ 𝖲𝗍𝗋𝖾𝖺𝗆 𝖤𝗇𝖽𝖾𝖽 / 𝖲𝗍𝗈𝗉𝗉𝖾𝖽 🎄\n"
-            f"│ \n"
-            f"└𝖡𝗒 : {user_mention} 🥀",
-            reply_markup=keyboard
+            f"<blockquote>"
+            f"<b>❖ δᴛʀєᴧϻ єηᴅєᴅ / δᴛσᴘᴘєᴅ ❞</b>\n\n"
+            f"<b>❍ BY :</b> {user_mention}"
+            f"</blockquote>",
+            reply_markup=keyboard,
+            parse_mode=ParseMode.HTML
         )
         
         logger.info(f"Playback stopped by {message.from_user.id} in {chat_id}")
@@ -182,7 +207,10 @@ async def volume_command(client: Client, message: Message):
         volume_level = "🔇" if volume == 0 else "🔈" if volume < 50 else "🔉" if volume < 100 else "🔊"
         
         await message.reply_text(
-            f"{volume_level} **Volume Set to {volume}%!**"
+            f"<blockquote>"
+            f"{volume_level} <b>ᴠσʟᴜϻє ꜱєᴛ ᴛσ {volume}%! ❞</b>"
+            f"</blockquote>",
+            parse_mode=ParseMode.HTML
         )
         
         logger.info(f"Volume set to {volume} by {message.from_user.id} in {chat_id}")

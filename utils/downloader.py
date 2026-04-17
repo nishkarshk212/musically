@@ -64,26 +64,20 @@ class Downloader:
             if not video_id:
                 return None
             
-            # Use yt-dlp to get video info (metadata only)
+            # FASTEST: Use yt-dlp metadata extraction without full download
+            ydl_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'extract_flat': True,  # Fast extraction
+                'skip_download': True,
+                'nocheckcertificate': True,
+                'ignoreerrors': True,
+                'socket_timeout': 5,
+            }
+            
             loop = asyncio.get_event_loop()
-            
-            def _extract():
-                ydl_opts = {
-                    'quiet': True,
-                    'no_warnings': True,
-                    'extract_flat': 'in_playlist',
-                    'format': 'bestaudio/best',
-                    'nocheckcertificate': True,
-                    'ignoreerrors': True,
-                    'socket_timeout': 10,  # Fast timeout
-                    'retries': 3,  # Limited retries
-                    'fragment_retries': 3,
-                    'extractor_retries': 2,
-                }
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    return ydl.extract_info(url, download=False)
-            
-            info = await loop.run_in_executor(None, _extract)
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = await loop.run_in_executor(None, lambda: ydl.extract_info(url, download=False))
             
             if not info:
                 return None
@@ -92,9 +86,9 @@ class Downloader:
             song.title = info.get('title', 'Unknown')
             song.duration = int(info.get('duration', 0))
             song.thumbnail = info.get('thumbnail', '')
-            song.channel = info.get('channel', info.get('uploader', 'Unknown'))
+            song.channel = info.get('uploader', 'Unknown')
             song.video_id = video_id
-            song.url = info.get('webpage_url', url)
+            song.url = url
             
             return song
             
@@ -196,79 +190,47 @@ class Downloader:
             return None
     
     async def search_and_download(self, query: str) -> Optional[SongInfo]:
-        """
-        Search for a song and download it using yt-dlp search + NexGen API download
-        
-        Args:
-            query: Search query
-            
-        Returns:
-            SongInfo with downloaded file path or None
-        """
+        """Search for a song and download it using yt-dlp search + NexGen API download"""
         try:
-            # Search on YouTube using yt-dlp with better options
+            # Search on YouTube using yt-dlp - ULTRA FAST options
             search_url = f"ytsearch1:{query}"
             
+            ydl_opts = {
+                'quiet': True,
+                'no_warnings': True,
+                'extract_flat': True,  # FAST: don't extract metadata of entries
+                'skip_download': True,
+                'playlist_items': '1',
+                'nocheckcertificate': True,
+                'socket_timeout': 5,
+            }
+            
             loop = asyncio.get_event_loop()
-            
-            def _search():
-                ydl_opts = {
-                    'quiet': True,
-                    'no_warnings': True,
-                    'extract_flat': False,  # Get full info directly
-                    'format': 'bestaudio/best',
-                    'default_search': 'ytsearch',
-                    'ignoreerrors': True,
-                    'nocheckcertificate': True,
-                    'socket_timeout': 10,  # Fast timeout
-                    'retries': 2,  # Limited retries for speed
-                    'fragment_retries': 2,
-                    'extractor_retries': 1,
-                    'playlist_items': '1',  # Only get first result
-                }
-                with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    return ydl.extract_info(search_url, download=False)
-            
-            info = await loop.run_in_executor(None, _search)
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = await loop.run_in_executor(None, lambda: ydl.extract_info(search_url, download=False))
             
             if not info or 'entries' not in info or not info['entries']:
-                logger.error(f"❌ No search results found for: {query}")
                 return None
             
-            # Get first result
             video_info = info['entries'][0]
-            
-            # Check if video_info is valid
-            if not video_info or not isinstance(video_info, dict):
-                logger.error(f"❌ Invalid video info in search results")
-                return None
-            
-            video_id = video_info.get('id', '')
-            
+            video_id = video_info.get('id')
             if not video_id:
-                logger.error(f"❌ No video ID found in search results")
                 return None
-            
+                
             video_url = f"https://www.youtube.com/watch?v={video_id}"
-            logger.info(f"✅ Found: {video_info.get('title', 'Unknown')} - {video_url}")
             
-            # Create SongInfo directly from search result (faster - skip extra API call)
+            # Create SongInfo directly from search result (FASTEST)
             song_info = SongInfo()
             song_info.title = video_info.get('title', 'Unknown')
             song_info.duration = int(video_info.get('duration', 0))
-            song_info.thumbnail = video_info.get('thumbnail', '')
-            song_info.channel = video_info.get('channel', video_info.get('uploader', 'Unknown'))
+            song_info.thumbnail = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+            song_info.channel = video_info.get('uploader', 'Unknown')
+            song_info.views = video_info.get('view_count', '0')
             song_info.video_id = video_id
             song_info.url = video_url
             
-            # Check duration limit
-            if song_info.duration > MAX_DURATION:
-                logger.error(f"Song too long: {song_info.duration}s")
-                return None
-            
-            # Download using NexGen API
+            # Download using NexGen API (non-blocking)
             file_path = await self.download_song(video_url, song_info)
-            
             if file_path:
                 return song_info
             

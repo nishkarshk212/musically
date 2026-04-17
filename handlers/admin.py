@@ -95,8 +95,8 @@ async def start_command(client: Client, message: Message):
         # Randomly select a start image
         selected_image = random.choice(START_IMAGES)
         
-        # Check if in group or private chat
-        if message.chat.type in ['group', 'supergroup']:
+        # Check if in group, supergroup or channel
+        if message.chat.type in ['group', 'supergroup', 'channel']:
             # GROUP START MESSAGE - When bot is added to group
             from utils.group_start import (
                 format_group_start_message,
@@ -138,16 +138,7 @@ async def start_command(client: Client, message: Message):
 ├───────────────────▣
 │❍ ʙᴇsᴛ ǫᴜɪʟɪᴛʏ ғᴇᴀᴛᴜʀᴇs •
 │❍ ᴘᴏᴡᴇʀᴇᴅ ʙʏ...{support_mention}
-╰───────────────────▣
-
-🎵 **𝖠𝗏𝖺𝗂𝗅𝖺𝖻𝗅𝖾 𝖥𝖾𝖺𝗍𝗎𝗋𝖾𝗌:**
-• 𝖧𝗂𝗀𝗁 𝖰𝗎𝖺𝗅𝗂𝗍𝗒 𝖬𝗎𝗌𝗂𝖼 𝖲𝗍𝗋𝖾𝖺𝗆𝗂𝗇𝗀
-• 𝖲𝖾𝖾𝗄, 𝖲𝗉𝖾𝖾𝖽 𝖢𝗈𝗇𝗍𝗋𝗈𝗅 & 𝖫𝗈𝗈𝗉
-• 𝖰𝗎𝖾𝗎𝖾 𝖬𝖺𝗇𝖺𝗀𝖾𝗆𝖾𝗇𝗍
-• 𝖠𝖽𝗆𝗂𝗇 𝖢𝗈𝗆𝗆𝖺𝗇𝖽𝗌
-
-<b>𝖢𝗅𝗂𝖼𝗄 "𝖠𝖽𝖽 𝖬𝖾" 𝗍𝗈 𝖺𝖽𝖽 𝗆𝖾 𝗍𝗈 𝗒𝗈𝗎𝗋 𝗀𝗋𝗈𝗎𝗉!</b>
-<b>𝖢𝗅𝗂𝖼𝗄 "𝖧𝖾𝗅𝗉" 𝗍𝗈 𝗌𝖾𝖾 𝖺𝗅𝗅 𝖼𝗈𝗆𝗆𝖺𝗇𝖽𝗌.</b>"""
+╰───────────────────▣"""
             
             # Create inline keyboard for private chat
             keyboard = InlineKeyboardMarkup([
@@ -187,10 +178,10 @@ async def start_command(client: Client, message: Message):
             bot_username = bot_info.username
             bot_mention = f"<a href='https://t.me/{bot_username}'>{bot_info.first_name}</a>"
             
-            if message.chat.type in ['group', 'supergroup']:
+            if message.chat.type in ['group', 'supergroup', 'channel']:
                 # Simple group fallback
                 await message.reply_text(
-                    f"<b>{bot_mention} 𝖨𝗌 𝖠𝗅𝗂𝗏𝖾 .</b>\n\n"
+                    f"<b>{bot_mention} 𝖨𝗌 𝖠𝗅𝗂𝖛𝖊 .</b>\n\n"
                     f"Use /help to see all commands.",
                     disable_web_page_preview=True
                 )

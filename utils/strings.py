@@ -58,12 +58,13 @@ def build_playing_message(title, title_url, duration, requester, bot_name="Music
     # Create clickable song title
     song_mention = f'<a href="{title_url}">{title}</a>' if title_url else title
     
+    # Styled with separate blockquotes for a colorful/structured look
     return (
+        "<blockquote><b>❖ δTΛRTED δTREΛMIηG ❞</b></blockquote>"
         "<blockquote>"
-        "<b>❖ 𝛅ᴛᴧʀᴛєᴅ 𝛅ᴛʀєᴧϻɪηɢ</b>\n\n"
-        f"<b>❍ тɪᴛʟє :</b> {song_mention}\n"
-        f"<b>❍ ᴅᴜʀᴧᴛɪση :</b> {duration} ϻɪηᴜᴛєs\n"
-        f"<b>❍ ʙʏ :</b> {requester}"
+        f"<b>❍ TITLE :</b> {song_mention} <b>❞</b>\n"
+        f"<b>❍ DURΛTIση :</b> {duration} <b>MIηUTeS</b>\n"
+        f"<b>❍ BY :</b> {requester}"
         "</blockquote>"
     )
 
@@ -90,11 +91,13 @@ ERROR_NOT_IN_VC = "❌ I'm not in a voice chat!"
 
 # Success Messages
 SUCCESS_ADDED_TO_QUEUE = """
-❖ ᴧᴅᴅєᴅ ᴛᴏ ǫᴜєᴜᴇ ᴧᴛ #{position}
+<blockquote>
+<b>❖ ᴧᴅᴅєᴅ ᴛᴏ ǫᴜєᴜᴇ ᴧᴛ #{position} ❞</b>
 
-❍ ᴛɪᴛʟє : {title}
-❍ ᴅᴜʀᴀᴛɪση : {duration}
-❍ ʙʏ : {requester}
+<b>❍ TITLE :</b> {title} <b>❞</b>
+<b>❍ DURΛTIση :</b> {duration} <b>MIηUTeS</b>
+<b>❍ BY :</b> {requester}
+</blockquote>
 """
 
 # Controls Help

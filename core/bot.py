@@ -16,7 +16,7 @@ import handlers
 
 # Configure logging - optimized for performance
 logging.basicConfig(
-    level=logging.WARNING,  # Changed from INFO to WARNING to reduce I/O
+    level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)

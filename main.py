@@ -6,6 +6,13 @@ A full-featured music bot for Telegram voice chats
 
 import asyncio
 import sys
+
+# Fix for pyrogram and Python 3.12+ event loop issue
+try:
+    asyncio.get_event_loop()
+except RuntimeError:
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
 import os
 import logging
 from core.bot import bot_app

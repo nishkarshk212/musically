@@ -57,10 +57,14 @@ async def cplay_command(client: Client, message: Message):
         )
         
         # Add to queue
-        position = await queue_manager.add_to_queue(message.chat.id, song)
+        queue = queue_manager.get_queue(message.chat.id)
+        position = queue.add_song(song)
         
         if position == 1:
             # Start playing
+            queue.current_song = song
+            queue.is_playing = True
+            
             await status_msg.edit_text(
                 NOW_PLAYING_MESSAGE.format(
                     title=song.title,
@@ -129,9 +133,14 @@ async def cvplay_command(client: Client, message: Message):
         )
         
         # Add to queue
-        position = await queue_manager.add_to_queue(message.chat.id, song)
+        queue = queue_manager.get_queue(message.chat.id)
+        position = queue.add_song(song)
         
         if position == 1:
+            # Start playing
+            queue.current_song = song
+            queue.is_playing = True
+            
             await status_msg.edit_text(
                 NOW_PLAYING_MESSAGE.format(
                     title=song.title,

@@ -10,7 +10,7 @@ from core.queue import queue_manager, Song
 from core.call_manager import call_manager
 from utils.downloader import downloader
 from utils.thumbnail_generator import create_thumbnail
-from utils.formatter import format_time
+from utils.formatter import format_time, format_views
 from utils.decorators import bot_can_manage_vc
 from utils.strings import build_playing_message, SUCCESS_ADDED_TO_QUEUE, ERROR_NO_RESULTS, ERROR_QUEUE_FULL, SUPPORT_CHANNEL_USERNAME
 from utils.html_helper import blockquote
@@ -28,19 +28,25 @@ AYU = [
 ]
 
 
-async def send_playing_message(client: Client, message: Message, song, chat_id: int, song_info):
+async def send_playing_message(client: Client, chat_id: int, song, song_info=None):
     """Send playing message in background after playback has started"""
     try:
         # Generate thumbnail asynchronously
         thumb_path = None
-        if song_info.thumbnail:
+        
+        # Get metadata from song_info or song object
+        thumbnail_url = getattr(song_info, 'thumbnail', song.thumbnail) if song_info else song.thumbnail
+        artist = getattr(song_info, 'channel', 'Unknown') if song_info else "Unknown"
+        views = format_views(getattr(song_info, 'views', '0')) if song_info else "0"
+        
+        if thumbnail_url:
             thumb_path = create_thumbnail(
                 title=song.title,
-                artist=song_info.channel,
-                views="",
+                artist=artist,
+                views=views,
                 duration=format_time(song.duration),
-                cover_url=song_info.thumbnail,
-                output=f"assets/thumb_{chat_id}_{song_info.video_id}.png"
+                cover_url=thumbnail_url,
+                output=f"assets/thumb_{chat_id}_{song.video_id}.png"
             )
         
         # Get bot info
@@ -81,7 +87,8 @@ async def send_playing_message(client: Client, message: Message, song, chat_id: 
         
         # Send message with thumbnail if available
         if thumb_path and os.path.exists(thumb_path):
-            await message.reply_photo(
+            await client.send_photo(
+                chat_id=chat_id,
                 photo=thumb_path,
                 caption=playing_caption,
                 parse_mode=ParseMode.HTML,
@@ -94,8 +101,9 @@ async def send_playing_message(client: Client, message: Message, song, chat_id: 
                 pass
         else:
             # Send as text if no thumbnail
-            await message.reply_text(
-                playing_caption,
+            await client.send_message(
+                chat_id=chat_id,
+                text=playing_caption,
                 parse_mode=ParseMode.HTML,
                 disable_web_page_preview=True,
                 reply_markup=keyboard
@@ -153,22 +161,15 @@ async def play_command(client: Client, message: Message):
         # Check if query is URL and process asynchronously for speed
         is_url = query.startswith(("http://", "https://"))
         
-        # Start downloading immediately - NO message yet for maximum speed
+        # Start search/extraction immediately
         if is_url:
-            # Extract info from URL - faster
             song_info = await downloader.extract_info(query)
-            if not song_info:
-                await message.reply_text(
-                    "❌ Failed to extract information from the URL.\n"
-                    "Please make sure it's a valid YouTube link."
-                )
-                return
         else:
-            # Search and download - optimized
             song_info = await downloader.search_and_download(query)
-            if not song_info:
-                await message.reply_text(ERROR_NO_RESULTS.format(query=query))
-                return
+            
+        if not song_info:
+            await message.reply_text(ERROR_NO_RESULTS.format(query=query))
+            return
         
         # Check queue size
         if queue.size() >= MAX_QUEUE_SIZE:
@@ -191,71 +192,47 @@ async def play_command(client: Client, message: Message):
             # Add to queue - fast operation
             position = queue.add_song(song)
             
-            # NOW send message (after queue add)
-            processing_msg = await message.reply_text(
-                f"**{random.choice(AYU)}**"
-            )
-            
-            # Get bot username for buttons
-            bot_username = (await client.get_me()).username
-            
             # Create keyboard with close button
-            keyboard = InlineKeyboardMarkup([
-                [
-                    InlineKeyboardButton("ᴄʟσꜱє", callback_data="close_playing")
-                ]
-            ])
+            keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟσꜱє", callback_data="close_playing")]])
             
-            await processing_msg.edit_text(
+            await message.reply_text(
                 SUCCESS_ADDED_TO_QUEUE.format(
                     title=song.title,
                     duration=format_time(song.duration),
                     requester=song.requester,
                     position=position
                 ),
-                reply_markup=keyboard
+                reply_markup=keyboard,
+                parse_mode=ParseMode.HTML
             )
         else:
-            # NOT PLAYING - Join VC and play IMMEDIATELY (highest priority)
+            # NOT PLAYING - Join VC and play IMMEDIATELY
             if not call_manager:
                 await message.reply_text("❌ Call manager not initialized!")
                 return
             
-            # Show quick processing message
-            processing_msg = await message.reply_text(
-                f"**{random.choice(AYU)}**"
-            )
-            
-            # IMMEDIATE: Add to queue first, then join voice chat and start playback
             try:
                 # Add song to queue FIRST to prevent auto-leave
                 queue.add_song(song)
                 queue.current_song = song
-                queue.is_playing = True  # Mark as playing immediately
-                logger.info(f"Song added to queue and marked as playing for chat {chat_id}")
+                queue.is_playing = True
                 
                 # Join voice chat and start playback
-                assistant_already_present = await call_manager.join_voice_chat(chat_id, chat_username)
-                logger.info(f"Voice chat joined for chat {chat_id}")
+                await call_manager.join_voice_chat(chat_id, chat_username)
                 await call_manager.play_song(chat_id, song)
-                logger.info(f"play_song() completed for chat {chat_id}")
-                
-                # NOW playback has started, delete processing msg
-                await processing_msg.delete()
                 
                 # Send playing message in background (non-blocking)
                 asyncio.create_task(
                     send_playing_message(
                         client=client,
-                        message=message,
-                        song=song,
                         chat_id=chat_id,
+                        song=song,
                         song_info=song_info
                     )
                 )
                 
             except Exception as play_error:
-                await processing_msg.edit_text(f"❌ Failed to play: {str(play_error)}")
+                await message.reply_text(f"❌ Failed to play: {str(play_error)}")
                 raise
         
         logger.info(f"Play command executed by {message.from_user.id} in {chat_id}")

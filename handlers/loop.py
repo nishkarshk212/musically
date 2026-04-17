@@ -28,19 +28,25 @@ async def loop_command(client: Client, message: Message):
             # Show current loop status
             if queue.loop_count > 0:
                 await message.reply_text(
-                    f"🔁 **Loop is Enabled!**\n\n"
-                    f"Current song will loop **{queue.loop_count}** more times.\n\n"
-                    "**Usage:**\n"
-                    "• `/loop <number>` - Set loop count\n"
-                    "• `/loop off` - Disable loop"
+                    f"<blockquote>"
+                    f"<b>🔁 ʟσσᴘ ɪꜱ єηᴧʙʟєᴅ! ❞</b>\n\n"
+                    f"Current song will loop <b>{queue.loop_count}</b> more times.\n\n"
+                    "<b>Usage:</b>\n"
+                    "• /loop &lt;number&gt; - Set loop count\n"
+                    "• /loop off - Disable loop"
+                    f"</blockquote>",
+                    parse_mode="HTML"
                 )
             else:
                 await message.reply_text(
-                    "🔁 **Loop is Disabled**\n\n"
-                    "**Usage:**\n"
-                    "• `/loop <number>` - Loop current song N times\n"
-                    "• `/loop off` - Disable loop\n\n"
-                    "**Example:** `/loop 3` will play the song 4 times total"
+                    f"<blockquote>"
+                    f"<b>🔁 ʟσσᴘ ɪꜱ ᴅɪꜱᴧʙʟєᴅ ❞</b>\n\n"
+                    "<b>Usage:</b>\n"
+                    "• /loop &lt;number&gt; - Loop current song N times\n"
+                    "• /loop off - Disable loop\n\n"
+                    "<b>Example:</b> /loop 3 will play the song 4 times total"
+                    f"</blockquote>",
+                    parse_mode="HTML"
                 )
             return
         
@@ -53,8 +59,11 @@ async def loop_command(client: Client, message: Message):
             queue.loop_queue = False
             
             await message.reply_text(
-                "🔁 **Loop Disabled!**\n\n"
-                "Song will play normally."
+                f"<blockquote>"
+                f"<b>🔁 ʟσσᴘ ᴅɪꜱᴧʙʟєᴅ! ❞</b>\n\n"
+                f"Song will play normally."
+                f"</blockquote>",
+                parse_mode="HTML"
             )
             
             logger.info(f"Loop disabled by {message.from_user.id} in {chat_id}")
@@ -74,9 +83,12 @@ async def loop_command(client: Client, message: Message):
                 queue.loop_queue = False
                 
                 await message.reply_text(
-                    f"🔁 **Loop Enabled!**\n\n"
-                    f"Current song will loop **{loop_count}** times.\n"
-                    f"Total plays: **{loop_count + 1}** (including current)"
+                    f"<blockquote>"
+                    f"<b>🔁 ʟσσᴘ єηᴧʙʟєᴅ! ❞</b>\n\n"
+                    f"Current song will loop <b>{loop_count}</b> times.\n"
+                    f"Total plays: <b>{loop_count + 1}</b> (including current)"
+                    f"</blockquote>",
+                    parse_mode="HTML"
                 )
                 
                 logger.info(f"Loop set to {loop_count} by {message.from_user.id} in {chat_id}")

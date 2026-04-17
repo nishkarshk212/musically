@@ -27,6 +27,31 @@ def format_time(seconds: int) -> str:
         return f"{minutes:02d}:{secs:02d}"
 
 
+def format_views(views) -> str:
+    """
+    Format view count to human readable format (e.g., 1.2M, 500K)
+    
+    Args:
+        views: View count
+        
+    Returns:
+        Formatted view string
+    """
+    try:
+        if not views:
+            return "0 views"
+        
+        num = int(views)
+        if num >= 1000000:
+            return f"{num / 1000000:.1f}M views"
+        elif num >= 1000:
+            return f"{num / 1000:.1f}K views"
+        else:
+            return f"{num} views"
+    except (ValueError, TypeError):
+        return str(views) if views else "0 views"
+
+
 def format_size(size_bytes: int) -> str:
     """
     Format bytes to human readable size
