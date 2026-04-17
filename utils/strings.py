@@ -61,7 +61,8 @@ def build_playing_message(title, title_url, duration, requester, bot_name="Music
     # Styled with dual blockquotes: one for header, one for details
     # Added \n between blockquotes to ensure they appear on separate lines
     return (
-        "<blockquote><b>❖  𝛅ᴛᴧʀᴛєᴅ  𝛅ᴛʀєᴧϻɪηɢ</b></blockquote>\n"
+        "<blockquote><b>❖  𝛅ᴛᴧʀᴛєᴅ  𝛅ᴛʀєᴧϻɪηɢ</b></blockquote>"
+        "\n"
         "<blockquote>"
         f"<b>❍ тɪᴛʟє :</b> {song_mention}\n"
         f"<b>❍ ᴅᴜʀᴧᴛɪση :</b> {duration} <b>ϻɪηᴜᴛєs</b>\n"

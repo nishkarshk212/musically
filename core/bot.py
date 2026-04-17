@@ -115,6 +115,9 @@ class BotApp:
         # Start auto-restart timer (24 hours = 86400 seconds)
         asyncio.create_task(self.auto_restart_timer())
         
+        # Start auto-maintenance timer (24 hours)
+        asyncio.create_task(self.auto_maintenance_timer())
+        
     async def auto_restart_timer(self):
         """Timer for 24-hour auto-restart"""
         await asyncio.sleep(86400)
@@ -129,6 +132,23 @@ class BotApp:
                 logger.error(f"Failed to send restart message: {e}")
         
         await self.restart()
+
+    async def auto_maintenance_timer(self):
+        """Timer for 24-hour auto-maintenance"""
+        from handlers.maintenance import clean_bot_data
+        while True:
+            await asyncio.sleep(86400)
+            logger.info("Starting scheduled maintenance...")
+            status = await clean_bot_data()
+            if status and LOG_GROUP_ID:
+                try:
+                    await self.app.send_message(
+                        LOG_GROUP_ID,
+                        "🧹 **Scheduled Maintenance Complete!**\n\n"
+                        "Automatically cleared cache and optimized storage."
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to send maintenance message: {e}")
 
     def setup_handlers(self):
         """Setup all command handlers"""
@@ -155,9 +175,14 @@ class BotApp:
         from handlers.ytsearch import search_command, csearch_command
         from handlers.settings_command import settings_command
         from handlers.new_group import new_group_handler
+        from handlers.maintenance import clean_command, restart_command
         
         # New group handler
         self.app.add_handler(MessageHandler(new_group_handler, filters.new_chat_members))
+        
+        # Maintenance commands
+        self.app.add_handler(MessageHandler(clean_command, command("clean")))
+        self.app.add_handler(MessageHandler(restart_command, command("restart")))
         
         # Settings command
         self.app.add_handler(MessageHandler(settings_command, command("settings")))
