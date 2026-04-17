@@ -148,7 +148,9 @@ async def start_command(client: Client, message: Message):
                     InlineKeyboardButton(
                         "✦ ᴧᴅᴅ ϻє ✦",
                         url=f"https://t.me/{bot_username}?startgroup=true"
-                    ),
+                    )
+                ],
+                [
                     InlineKeyboardButton(
                         "❖ ʜєʟᴘ ᴧηᴅ ᴄσϻϻᴧηᴅ ❖",
                         callback_data="help_commands"

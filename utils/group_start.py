@@ -43,7 +43,9 @@ def get_group_start_keyboard(bot_username: str) -> InlineKeyboardMarkup:
             InlineKeyboardButton(
                 "✦ ᴧᴅᴅ ϻє ✦",
                 url=f"https://t.me/{bot_username}?startgroup=true"
-            ),
+            )
+        ],
+        [
             InlineKeyboardButton(
                 "⊜ ꜱᴜᴘᴘσʀᴛ ⊜",
                 url=f"https://t.me/{SUPPORT_CHANNEL_USERNAME}"
