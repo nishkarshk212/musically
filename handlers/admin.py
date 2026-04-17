@@ -128,18 +128,19 @@ async def start_command(client: Client, message: Message):
                 parse_mode=ParseMode.HTML
             )
         else:
-            # PRIVATE CHAT START MESSAGE - Full welcome without uptime
+            # PRIVATE CHAT START MESSAGE - Full welcome
             user_mention = message.from_user.mention
-            support_mention = f"<a href='https://t.me/{SUPPORT_CHANNEL_USERNAME}'>Support Channel</a>"
+            bot_mention = f"<a href='https://t.me/{bot_username}'>{bot_name}</a>"
             
-            private_start_text = f"""━━━━━━━━━━━━━━━━━━━━━━━━▢
-❍ ʜᴇʏ {user_mention}
-❍ ɪ ᴀᴍ {bot_mention}
-━━━━━━━━━━━━━━━━━━━━━━━━▢
-━━━━━━━━━━━━━━━━━━━━━━━━▢
-❍ ʙᴇsᴛ ǫᴜɪʟɪᴛʏ ғᴇᴀᴛᴜʀᴇs •
-❍ ᴘᴏᴡᴇʀᴇᴅ ʙʏ...{support_mention}
-━━━━━━━━━━━━━━━━━━━━━━━━▢"""
+            private_start_text = f"""✦ ʜєʟʟᴏ {user_mention} 🥀 
+ 
+ ⊚ ᴛʜɪꜱ ɪꜱ {bot_mention} 
+ 
+ ➻ ᴧ ᴘʀєᴍɪᴜᴍ ᴅєꜱɪɢηєᴅ ϻᴜꜱɪᴄ ᴘʟᴧʏєʀ ʙσᴛ ꜰσʀ ᴛєʟєɢʀᴧϻ ɢʀσᴜᴘ & ᴄʜᴧηηєʟ. 
+ 
+ » ɪғ ᴧηʏ ʜєʟᴘ ᴛᴧᴘ ᴛᴏ ʜєʟᴘ ʙᴜᴛᴛση. 
+ 
+ •── ⋅ ⋅  ────── ⋅᯽⋅ ────── ⋅ ⋅ ⋅──•"""
             
             # Create inline keyboard for private chat
             keyboard = InlineKeyboardMarkup([
