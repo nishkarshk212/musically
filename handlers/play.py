@@ -160,6 +160,9 @@ async def play_command(client: Client, message: Message):
             )
             return
         
+        # Check if query is a URL
+        is_url = query.startswith(("http://", "https://", "www."))
+        
         # FAST CACHE CHECK: If song is in cache, play IMMEDIATELY without any message
         if not is_url and query in downloader._search_cache:
             song_info = downloader._search_cache[query]

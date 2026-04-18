@@ -5,12 +5,15 @@ Adapted from Annie Music style UI
 """
 
 import random
+import logging
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, Message
 from pyrogram.enums import ChatMemberStatus, ChatType
 from pyrogram.errors import MessageNotModified
 from database.mongodb import db_manager
 from config import OWNER_ID, SUDOERS
+
+logger = logging.getLogger(__name__)
 
 # Settings panel images
 SETTINGS_IMAGES = [
@@ -138,6 +141,8 @@ async def playmode_panel(client: Client, callback_query: CallbackQuery):
         )
     except MessageNotModified:
         pass
+    except Exception as e:
+        logger.error(f"Error in playmode_panel: {e}")
     await callback_query.answer("Play Mode Settings")
 
 async def skipmode_panel(client: Client, callback_query: CallbackQuery):
@@ -168,6 +173,8 @@ async def skipmode_panel(client: Client, callback_query: CallbackQuery):
         )
     except MessageNotModified:
         pass
+    except Exception as e:
+        logger.error(f"Error in skipmode_panel: {e}")
     await callback_query.answer("Skip Mode Settings")
 
 async def stopmode_panel(client: Client, callback_query: CallbackQuery):
@@ -198,6 +205,8 @@ async def stopmode_panel(client: Client, callback_query: CallbackQuery):
         )
     except MessageNotModified:
         pass
+    except Exception as e:
+        logger.error(f"Error in stopmode_panel: {e}")
     await callback_query.answer("Stop Mode Settings")
 
 # --- Update Handlers ---
@@ -293,6 +302,8 @@ async def quality_callback(client: Client, callback_query: CallbackQuery):
         )
     except MessageNotModified:
         pass
+    except Exception as e:
+        logger.error(f"Error in quality_callback: {e}")
     await callback_query.answer("Quality Settings")
 
 async def volume_callback(client: Client, callback_query: CallbackQuery):
@@ -319,6 +330,8 @@ async def volume_callback(client: Client, callback_query: CallbackQuery):
         )
     except MessageNotModified:
         pass
+    except Exception as e:
+        logger.error(f"Error in volume_callback: {e}")
     await callback_query.answer("Volume Settings")
 
 async def videomode_callback(client: Client, callback_query: CallbackQuery):
@@ -345,6 +358,8 @@ async def videomode_callback(client: Client, callback_query: CallbackQuery):
         )
     except MessageNotModified:
         pass
+    except Exception as e:
+        logger.error(f"Error in videomode_callback: {e}")
     await callback_query.answer("Video Mode Settings")
 
 async def update_sub_setting(client: Client, callback_query: CallbackQuery):
