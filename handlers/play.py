@@ -163,6 +163,10 @@ async def play_command(client: Client, message: Message):
         # PERF PRIORITY: Show searching message IMMEDIATELY (approx 100-200ms)
         status_msg = await message.reply_text("🔍 **δєᴧʀᴄʜɪηɢ...**")
 
+        # START JOINING VC IN BACKGROUND FOR SPEED
+        # This prioritizes playing the song as requested
+        join_task = asyncio.create_task(call_manager.join_voice_chat(chat_id, chat_username))
+
         # Check if query is URL and process asynchronously for speed
         is_url = query.startswith(("http://", "https://"))
         
@@ -221,14 +225,16 @@ async def play_command(client: Client, message: Message):
                 return
             
             try:
+                # Wait for join_task if it's still running
+                if not join_task.done():
+                    await join_task
+                
                 # Set as current song IMMEDIATELY
                 queue.current_song = song
                 queue.is_playing = True
                 
-                # Update status for user
-                await status_msg.edit_text("🚀 **ᴊσɪηɪηɢ ᴠσɪᴄє ᴄʜᴧᴛ...**")
-                
                 # Join voice chat and start playback
+                # (join_voice_chat handles case where already joined)
                 await call_manager.join_voice_chat(chat_id, chat_username)
                 await call_manager.play_song(chat_id, song)
                 

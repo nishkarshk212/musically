@@ -147,27 +147,9 @@ class Downloader:
                             stream_link = data.get("link")
                             
                             if status == "done" and stream_link:
-                                logger.info(f"✅ [NEXGEN] Got stream link, downloading...")
-                                
-                                # Step 2: Download from the stream URL with better error handling
-                                logger.info(f"📥 [NEXGEN] Downloading from: {stream_link}")
-                                async with session.get(stream_link, timeout=aiohttp.ClientTimeout(total=300)) as stream_response:
-                                    if stream_response.status == 200:
-                                        # Download with proper chunk handling to prevent corruption
-                                        with open(file_path, 'wb') as f:
-                                            async for chunk in stream_response.content.iter_chunked(32768):  # Larger chunks for stability
-                                                f.write(chunk)
-                                        
-                                        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-                                            logger.info(f"✅ [NEXGEN] Successfully downloaded: {file_path}")
-                                            song_info.file_path = file_path
-                                            return file_path
-                                        else:
-                                            logger.error(f"❌ [NEXGEN] File empty or corrupted")
-                                            return None
-                                    else:
-                                        logger.error(f"❌ [NEXGEN] Stream download failed: {stream_response.status}")
-                                        return None
+                                logger.info(f"✅ [NEXGEN] Got stream link, using for immediate playback")
+                                song_info.file_path = stream_link
+                                return stream_link
                             elif status == "downloading":
                                 logger.info("⏳ [NEXGEN] Still processing, waiting...")
                                 await asyncio.sleep(5)

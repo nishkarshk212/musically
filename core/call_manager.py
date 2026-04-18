@@ -115,6 +115,12 @@ class CallManager:
         """Leave voice chat in a group"""
         try:
             logger.info(f"Leaving voice chat in {chat_id}...")
+            
+            # Reset queue state
+            queue = queue_manager.get_queue(chat_id)
+            queue.is_playing = False
+            queue.current_song = None
+            
             if chat_id in self.calls:
                 call = self.calls[chat_id]
                 # PyTgCalls v2.x: leave the call
@@ -143,20 +149,31 @@ class CallManager:
             call = self.get_call(chat_id)
             queue = queue_manager.get_queue(chat_id)
             
-            # Check if file exists
-            if not os.path.exists(song.file_path):
-                raise FileNotFoundError(f"Audio file not found: {song.file_path}")
+            # Check if it's a URL or a file
+            is_url = song.file_path.startswith(("http://", "https://"))
             
-            file_size = os.path.getsize(song.file_path)
-            logger.info(f"File exists: {song.file_path}")
-            logger.info(f"File size: {file_size} bytes ({file_size / 1024 / 1024:.2f} MB)")
-            
-            # Validate file is not empty or corrupted
-            if file_size < 1024:  # Less than 1KB is likely corrupted
-                raise ValueError(f"Audio file too small ({file_size} bytes), likely corrupted")
+            if not is_url:
+                # Check if file exists
+                if not os.path.exists(song.file_path):
+                    raise FileNotFoundError(f"Audio file not found: {song.file_path}")
+                
+                file_size = os.path.getsize(song.file_path)
+                logger.info(f"File exists: {song.file_path}")
+                logger.info(f"File size: {file_size} bytes ({file_size / 1024 / 1024:.2f} MB)")
+                
+                # Validate file is not empty or corrupted
+                if file_size < 1024:  # Less than 1KB is likely corrupted
+                    raise ValueError(f"Audio file too small ({file_size} bytes), likely corrupted")
+            else:
+                logger.info(f"Playing from URL: {song.file_path}")
             
             # Small delay to ensure file is fully written (prevents audio breaking)
-            await asyncio.sleep(0.5)
+            # Reduced from 0.5s for faster playback
+            if not is_url:
+                if not os.path.exists(song.file_path):
+                     await asyncio.sleep(0.3)
+                else:
+                     await asyncio.sleep(0.1)
             
             # Create media stream - HIGH quality is often more stable for voice chats than STUDIO
             stream = MediaStream(
@@ -294,7 +311,9 @@ class CallManager:
     def is_playing(self, chat_id: int) -> bool:
         """Check if bot is playing in a chat"""
         queue = queue_manager.get_queue(chat_id)
-        return queue.is_playing
+        # Check if assistant is actually in the active_chats map and if a song is playing
+        is_active = self.active_chats.get(chat_id, False)
+        return queue.is_playing and is_active and queue.current_song is not None
     
     def get_current_song(self, chat_id: int) -> Optional[Song]:
         """Get currently playing song"""
@@ -342,13 +361,16 @@ class CallManager:
                 # If queue is empty and no more songs, leave voice chat
                 logger.info(f"Queue empty for chat {chat_id}, auto-leaving voice chat")
                 
+                # Mark as not playing IMMEDIATELY to allow new songs to play
+                queue.is_playing = False
+                queue.current_song = None
+                
                 # Wait 5 seconds before leaving to prevent rapid join/leave
                 await asyncio.sleep(5)
                 
                 # Double check queue is still empty
                 if queue.is_empty() and not queue.current_song:
                     await self.leave_voice_chat(chat_id)
-                    queue.clear_queue()
                     logger.info(f"Auto-left voice chat in {chat_id}")
                     
                     # Log message about auto-leaving
