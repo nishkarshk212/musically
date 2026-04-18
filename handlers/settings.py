@@ -45,7 +45,17 @@ async def is_admin_check(callback_query: CallbackQuery):
         return False
 
 async def get_settings_markup(chat_id: int):
-    """Generate main settings markup"""
+    """Generate main settings markup with status indicators"""
+    settings = await db_manager.get_chat_settings(chat_id)
+    
+    # Current values
+    clean_mode = settings.get("clean_mode", "enable")
+    logging = settings.get("logging", "enable")
+    
+    # Icons for toggles
+    cm_icon = "✅" if clean_mode == "enable" else "❌"
+    lg_icon = "✅" if logging == "enable" else "❌"
+
     keyboard = [
         [
             InlineKeyboardButton("ᴘʟᴧʏ ϻσᴅє", callback_data="set_pm"),
@@ -60,8 +70,8 @@ async def get_settings_markup(chat_id: int):
             InlineKeyboardButton("ᴠɪᴅєσ ϻσᴅє", callback_data="set_videomode")
         ],
         [
-            InlineKeyboardButton("ᴄʟєᴧη ϻσᴅє", callback_data="toggle_cleanmode"),
-            InlineKeyboardButton("ʟσɢɢɪηɢ", callback_data="toggle_logging")
+            InlineKeyboardButton(f"ᴄʟєᴧη ϻσᴅє {cm_icon}", callback_data="toggle_cleanmode"),
+            InlineKeyboardButton(f"ʟσɢɢɪηɢ {lg_icon}", callback_data="toggle_logging")
         ],
         [
             InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="back_to_start"),
@@ -173,18 +183,18 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
         if data == "toggle_cleanmode":
             new_mode = "disable" if settings.get("clean_mode", "enable") == "enable" else "enable"
             await db_manager.save_chat_settings(chat_id, {"clean_mode": new_mode})
-            await callback_query.answer(f"✅ Clean mode: {new_mode}d", show_alert=False)
-            # Refresh main panel
+            # Fetch latest markup and refresh
             markup = await get_settings_markup(chat_id)
             await callback_query.message.edit_reply_markup(reply_markup=markup)
+            await callback_query.answer(f"✅ Clean mode: {new_mode}d", show_alert=False)
             
         elif data == "toggle_logging":
             new_mode = "disable" if settings.get("logging", "enable") == "enable" else "enable"
             await db_manager.save_chat_settings(chat_id, {"logging": new_mode})
-            await callback_query.answer(f"✅ Logging: {new_mode}d", show_alert=False)
-            # Refresh main panel
+            # Fetch latest markup and refresh
             markup = await get_settings_markup(chat_id)
             await callback_query.message.edit_reply_markup(reply_markup=markup)
+            await callback_query.answer(f"✅ Logging: {new_mode}d", show_alert=False)
             
         # Sub-panel Updates
         elif data.startswith("update_pm_"):
