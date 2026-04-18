@@ -32,6 +32,8 @@ AYU = [
 async def send_playing_message(client: Client, chat_id: int, song, song_info=None):
     """Send playing message in background after playback has started"""
     try:
+        logger.info(f"📤 [SEND_PLAYING_MSG] Sending playing message for: {song.title}")
+        
         # Generate thumbnail asynchronously
         thumb_path = None
         
@@ -95,6 +97,7 @@ async def send_playing_message(client: Client, chat_id: int, song, song_info=Non
                 parse_mode=ParseMode.HTML,
                 reply_markup=keyboard
             )
+            logger.info(f"✅ [SEND_PLAYING_MSG] Photo message sent successfully")
             # Clean up thumbnail
             try:
                 os.remove(thumb_path)
@@ -109,6 +112,7 @@ async def send_playing_message(client: Client, chat_id: int, song, song_info=Non
                 disable_web_page_preview=True,
                 reply_markup=keyboard
             )
+            logger.info(f"✅ [SEND_PLAYING_MSG] Text message sent successfully")
     except Exception as e:
         logger.error(f"Failed to send playing message: {e}")
 
@@ -186,6 +190,8 @@ async def play_command(client: Client, message: Message):
                 queue.current_song = song
                 queue.is_playing = True
                 
+                logger.info(f"🎵 [PLAY_CMD] First song, sending playing message")
+                
                 # JOIN AND PLAY IN PARALLEL
                 join_task = asyncio.create_task(call_manager.join_voice_chat(chat_id, chat_username))
                 play_task = asyncio.create_task(call_manager.play_song(chat_id, song))
@@ -198,6 +204,7 @@ async def play_command(client: Client, message: Message):
                 return
             else:
                 position = queue.add_song(song)
+                logger.info(f"📝 [PLAY_CMD] Adding to queue at position {position}")
                 await message.reply_text(f"✅ **ᴧᴅᴅєᴅ ᴛᴏ ǫᴜєᴜᴇ ᴧᴛ #{position}**")
                 return
 
