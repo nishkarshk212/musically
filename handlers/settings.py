@@ -1,6 +1,6 @@
 """
 Settings Panel Handler
-Manages bot settings and configuration
+Manages bot settings and configuration with interactive toggle buttons
 """
 
 import random
@@ -9,7 +9,7 @@ from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardBu
 from database.mongodb import db_manager
 from config import OWNER_ID, SUDOERS
 
-# Settings panel images (same as start images)
+# Settings panel images
 SETTINGS_IMAGES = [
     "https://i.ibb.co/PzYnJRB7/anime-girl-autumn-scenery.jpg",
     "https://i.ibb.co/Fv79FW1/anime-girl-kimono-bamboo-forest.jpg",
@@ -39,664 +39,218 @@ async def is_admin_check(callback_query: CallbackQuery):
     # Group chat - check admin status
     try:
         member = await callback_query.message.chat.get_member(user_id)
-        return member.status in ['administrator', 'creator']
+        from pyrogram.enums import ChatMemberStatus
+        return member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
     except Exception:
         return False
 
+async def get_settings_markup(chat_id: int):
+    """Generate inline markup for settings with toggle buttons"""
+    settings = await db_manager.get_chat_settings(chat_id)
+    
+    # Current values with defaults
+    play_mode = settings.get("play_mode", "everyone")
+    skip_mode = settings.get("skip_mode", "admins")
+    clean_mode = settings.get("clean_mode", "enable")
+    logging = settings.get("logging", "enable")
+    quality = settings.get("quality", "high")
+    
+    # Toggles/Status
+    pm_icon = "👥 Everyone" if play_mode == "everyone" else "👮 Admins"
+    sm_icon = "👥 Everyone" if skip_mode == "everyone" else "👮 Admins"
+    cm_icon = "✅ Enabled" if clean_mode == "enable" else "❌ Disabled"
+    lg_icon = "✅ Enabled" if logging == "enable" else "❌ Disabled"
+    qu_icon = quality.capitalize()
+
+    keyboard = [
+        [
+            InlineKeyboardButton(f"ᴘʟᴧʏ ϻσᴅє", callback_data="none"),
+            InlineKeyboardButton(f"{pm_icon}", callback_data="toggle_playmode")
+        ],
+        [
+            InlineKeyboardButton(f"ꜱᴋɪᴘ ϻσᴅє", callback_data="none"),
+            InlineKeyboardButton(f"{sm_icon}", callback_data="toggle_skipmode")
+        ],
+        [
+            InlineKeyboardButton(f"ᴄʟєᴧη ϻσᴅє", callback_data="none"),
+            InlineKeyboardButton(f"{cm_icon}", callback_data="toggle_cleanmode")
+        ],
+        [
+            InlineKeyboardButton(f"ʟσɢɢɪηɢ", callback_data="none"),
+            InlineKeyboardButton(f"{lg_icon}", callback_data="toggle_logging")
+        ],
+        [
+            InlineKeyboardButton(f"ǫᴜᴧʟɪᴛʏ", callback_data="none"),
+            InlineKeyboardButton(f"📡 {qu_icon}", callback_data="set_quality")
+        ],
+        [
+            InlineKeyboardButton("ᴠσʟᴜϻє", callback_data="set_volume"),
+            InlineKeyboardButton("ᴠɪᴅєσ ϻσᴅє", callback_data="set_videomode")
+        ],
+        [
+            InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="back_to_start"),
+            InlineKeyboardButton("ᴄʟσꜱє", callback_data="close_playing")
+        ]
+    ]
+    return InlineKeyboardMarkup(keyboard)
+
 async def settings_callback(client: Client, callback_query: CallbackQuery):
-    """Handle settings button callback"""
+    """Handle settings main panel"""
     try:
         if not await is_admin_check(callback_query):
             await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
             return
 
-        # Settings message text
-        settings_text = """
+        chat_id = callback_query.message.chat.id
+        markup = await get_settings_markup(chat_id)
+        
+        settings_text = f"""
 ╭───────────────────▣
 │❍ **ʙᴏᴛ ꜱᴇᴛᴛɪɴɢꜱ ᴘᴀɴᴇʟ :**
 ├───────────────────▣
 │
-│⚙️ ᴄᴏɴꜰɪɢᴜʀᴇ ʏᴏᴜʀ ʙᴏᴛ ꜱᴇᴛᴛɪɴɢꜱ
-│   ꜰʀᴏᴍ ᴛʜᴇ ʙᴜᴛᴛᴏɴꜱ ʙᴇʟᴏᴡ.
+│⚙️ **ᴄᴏɴꜰɪɢᴜʀᴇ ʏᴏᴜʀ ʙᴏᴛ ʜᴇʀᴇ.**
+│   **ᴄʟɪᴄᴋ ᴏɴ ʙᴜᴛᴛᴏɴꜱ ᴛᴏ ᴛᴏɢɢʟᴇ.**
 │
 ╰───────────────────▣
 """
-        
-        # Randomly select an image
         selected_image = random.choice(SETTINGS_IMAGES)
         
-        # Create settings keyboard with proper symbols
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("• ᴘʟᴀʏ ϻσᴅє •", callback_data="set_playmode"),
-                InlineKeyboardButton("• ꜱᴋɪᴘ ϻσᴅє •", callback_data="set_skipmode")
-            ],
-            [
-                InlineKeyboardButton("• ǫᴜᴀʟɪᴛʏ •", callback_data="set_quality"),
-                InlineKeyboardButton("• ʟᴀηɢᴜᴀɢє •", callback_data="set_language")
-            ],
-            [
-                InlineKeyboardButton("• ᴠσʟᴜϻє •", callback_data="set_volume"),
-                InlineKeyboardButton("• ᴠɪᴅєσ ϻσᴅє •", callback_data="set_videomode")
-            ],
-            [
-                InlineKeyboardButton("• ᴄʟєᴀη ϻσᴅє •", callback_data="set_cleanmode"),
-                InlineKeyboardButton("• ʟσɢɢɪηɢ •", callback_data="set_logging")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="back_to_start")
-            ]
-        ])
-        
-        # Edit the same message
         await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
+            media=InputMediaPhoto(media=selected_image, caption=settings_text),
+            reply_markup=markup
         )
-        
-        await callback_query.message.edit_caption(
-            caption=settings_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Settings Panel", show_alert=False)
+        await callback_query.answer("Settings Menu", show_alert=False)
         
     except Exception as e:
-        await callback_query.answer("Error loading settings", show_alert=True)
-
-
-async def playmode_callback(client: Client, callback_query: CallbackQuery):
-    """Handle play mode settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
-
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_mode = settings.get("play_mode", "everyone")
-        
-        # Toggle checkmarks
-        e_tick = " ✅" if current_mode == "everyone" else ""
-        a_tick = " ✅" if current_mode == "admins" else ""
-        au_tick = " ✅" if current_mode == "auth" else ""
-
-        playmode_text = f"""
-╭───────────────────▣
-│❍ **ᴘʟᴀʏ ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│🎵 **ᴡʜᴏ ᴄᴀɴ ᴘʟᴀʏ sᴏɴɢs:**
-│
-│❍ **ᴇᴠᴇʀʏᴏɴᴇ**{e_tick}
-│❍ **ᴀᴅᴍɪɴs**{a_tick}
-│❍ **ᴀᴜᴛʜ ᴜsᴇʀs**{au_tick}
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• ᴇᴠᴇʀʏᴏɴᴇ{e_tick} •", callback_data="pm_everyone"),
-                InlineKeyboardButton(f"• ᴀᴅᴍɪɴs{a_tick} •", callback_data="pm_admins")
-            ],
-            [
-                InlineKeyboardButton(f"• ᴀᴜᴛʜ ᴜsᴇʀs{au_tick} •", callback_data="pm_auth")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=playmode_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Play Mode Settings", show_alert=False)
-        
-    except Exception as e:
-        await callback_query.answer("Error loading play mode settings", show_alert=True)
-
-
-async def skipmode_callback(client: Client, callback_query: CallbackQuery):
-    """Handle skip mode settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
-
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_mode = settings.get("skip_mode", "admins")
-        
-        # Toggle checkmarks
-        e_tick = " ✅" if current_mode == "everyone" else ""
-        a_tick = " ✅" if current_mode == "admins" else ""
-        au_tick = " ✅" if current_mode == "auth" else ""
-
-        skipmode_text = f"""
-╭───────────────────▣
-│❍ **ꜱᴋɪᴘ ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│⏭️ **ᴡʜᴏ ᴄᴀɴ sᴋɪᴘ sᴏɴɢs:**
-│
-│❍ **ᴇᴠᴇʀʏᴏɴᴇ**{e_tick}
-│❍ **ᴀᴅᴍɪɴs**{a_tick}
-│❍ **ᴀᴜᴛʜ ᴜsᴇʀs**{au_tick}
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• ᴇᴠᴇʀʏᴏɴᴇ{e_tick} •", callback_data="sm_everyone"),
-                InlineKeyboardButton(f"• ᴀᴅᴍɪɴs{a_tick} •", callback_data="sm_admins")
-            ],
-            [
-                InlineKeyboardButton(f"• ᴀᴜᴛʜ ᴜsᴇʀs{au_tick} •", callback_data="sm_auth")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=skipmode_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Skip Mode Settings", show_alert=False)
-        
-    except Exception as e:
-        await callback_query.answer("Error loading skip mode settings", show_alert=True)
-
+        await callback_query.answer(f"Error: {e}", show_alert=True)
 
 async def set_mode_callback(client: Client, callback_query: CallbackQuery):
-    """Handle setting individual modes"""
+    """Handle all toggle and setting updates"""
     try:
         if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
+            await callback_query.answer("❌ Admin Only!", show_alert=True)
             return
 
         chat_id = callback_query.message.chat.id
         data = callback_query.data
+        settings = await db_manager.get_chat_settings(chat_id)
         
-        if data.startswith("pm_"):
-            mode = data.replace("pm_", "")
-            await db_manager.save_chat_settings(chat_id, {"play_mode": mode})
-            await callback_query.answer(f"✅ Play mode set to {mode}!", show_alert=False)
-            await playmode_callback(client, callback_query)
+        # Toggle Logic
+        if data == "toggle_playmode":
+            new_mode = "admins" if settings.get("play_mode", "everyone") == "everyone" else "everyone"
+            await db_manager.save_chat_settings(chat_id, {"play_mode": new_mode})
+            await callback_query.answer(f"✅ Play mode: {new_mode}", show_alert=False)
             
-        elif data.startswith("sm_"):
-            mode = data.replace("sm_", "")
-            await db_manager.save_chat_settings(chat_id, {"skip_mode": mode})
-            await callback_query.answer(f"✅ Skip mode set to {mode}!", show_alert=False)
-            await skipmode_callback(client, callback_query)
+        elif data == "toggle_skipmode":
+            new_mode = "admins" if settings.get("skip_mode", "admins") == "admins" else "everyone"
+            await db_manager.save_chat_settings(chat_id, {"skip_mode": new_mode})
+            await callback_query.answer(f"✅ Skip mode: {new_mode}", show_alert=False)
             
-        elif data.startswith("quality_"):
-            quality = data.replace("quality_", "")
-            await db_manager.save_chat_settings(chat_id, {"quality": quality})
-            await callback_query.answer(f"✅ Quality set to {quality}!", show_alert=False)
-            await quality_callback(client, callback_query)
+        elif data == "toggle_cleanmode":
+            new_mode = "disable" if settings.get("clean_mode", "enable") == "enable" else "enable"
+            await db_manager.save_chat_settings(chat_id, {"clean_mode": new_mode})
+            await callback_query.answer(f"✅ Clean mode: {new_mode}d", show_alert=False)
             
-        elif data.startswith("lang_"):
-            lang = data.replace("lang_", "")
-            await db_manager.save_chat_settings(chat_id, {"language": lang})
-            await callback_query.answer(f"✅ Language set to {lang}!", show_alert=False)
-            await language_callback(client, callback_query)
+        elif data == "toggle_logging":
+            new_mode = "disable" if settings.get("logging", "enable") == "enable" else "enable"
+            await db_manager.save_chat_settings(chat_id, {"logging": new_mode})
+            await callback_query.answer(f"✅ Logging: {new_mode}d", show_alert=False)
             
-        elif data.startswith("vol_"):
-            vol = int(data.replace("vol_", ""))
-            await db_manager.save_chat_settings(chat_id, {"volume": vol})
-            await callback_query.answer(f"✅ Volume set to {vol}%!", show_alert=False)
-            await volume_callback(client, callback_query)
-            
-        elif data.startswith("clean_"):
-            status = data.replace("clean_", "")
-            await db_manager.save_chat_settings(chat_id, {"clean_mode": status})
-            await callback_query.answer(f"✅ Clean mode {status}d!", show_alert=False)
-            await cleanmode_callback(client, callback_query)
-            
-        elif data.startswith("log_"):
-            status = data.replace("log_", "")
-            await db_manager.save_chat_settings(chat_id, {"logging": status})
-            await callback_query.answer(f"✅ Logging {status}d!", show_alert=False)
-            await logging_callback(client, callback_query)
-            
-        elif data.startswith("video_"):
-            mode = data.replace("video_", "")
-            await db_manager.save_chat_settings(chat_id, {"video_mode": mode})
-            await callback_query.answer(f"✅ Video mode set to {mode}!", show_alert=False)
-            await videomode_callback(client, callback_query)
-            
-        elif data.startswith("auth_"):
-            mode = data.replace("auth_", "")
-            await db_manager.save_chat_settings(chat_id, {"auth_mode": mode})
-            await callback_query.answer(f"✅ Auth mode set to {mode}!", show_alert=False)
-            await authmode_callback(client, callback_query)
-
+        # Refresh the panel
+        markup = await get_settings_markup(chat_id)
+        await callback_query.message.edit_reply_markup(reply_markup=markup)
+        
     except Exception as e:
-        await callback_query.answer("Error saving setting", show_alert=True)
+        await callback_query.answer(f"Update failed: {e}", show_alert=True)
 
-
+# Sub-menus for Quality, Volume, etc.
 async def quality_callback(client: Client, callback_query: CallbackQuery):
-    """Handle quality settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
-
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_q = settings.get("quality", "medium")
-        
-        # Checkmarks
-        l_tick = " ✅" if current_q == "low" else ""
-        m_tick = " ✅" if current_q == "medium" else ""
-        h_tick = " ✅" if current_q == "high" else ""
-        s_tick = " ✅" if current_q == "studio" else ""
-
-        quality_text = f"""
-╭───────────────────▣
-│❍ **ǫᴜᴀʟɪᴛʏ ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│🎧 **sᴇʟᴇᴄᴛ ᴀᴜᴅɪᴏ ǫᴜᴀʟɪᴛʏ:**
-│
-│❍ **ʟᴏᴡ**{l_tick}
-│❍ **ϻᴇᴅɪᴜϻ**{m_tick}
-│❍ **ʜɪɢʜ**{h_tick}
-│❍ **ꜱᴛᴜᴅɪᴏ**{s_tick}
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• ʟᴏᴡ{l_tick} •", callback_data="quality_low"),
-                InlineKeyboardButton(f"• ϻᴇᴅɪᴜϻ{m_tick} •", callback_data="quality_medium")
-            ],
-            [
-                InlineKeyboardButton(f"• ʜɪɢʜ{h_tick} •", callback_data="quality_high"),
-                InlineKeyboardButton(f"• ꜱᴛᴜᴅɪᴏ{s_tick} •", callback_data="quality_studio")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=quality_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Quality Settings", show_alert=False)
-        
-    except Exception as e:
-        await callback_query.answer("Error loading quality settings", show_alert=True)
-
-
-async def language_callback(client: Client, callback_query: CallbackQuery):
-    """Handle language settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
-
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_lang = settings.get("language", "en")
-        
-        en_tick = " ✅" if current_lang == "en" else ""
-        hi_tick = " ✅" if current_lang == "hi" else ""
-
-        language_text = f"""
-╭───────────────────▣
-│❍ **ʟᴀηɢᴜᴀɢє ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│🌐 **sᴇʟᴇᴄᴛ ʙᴏᴛ ʟᴀɴɢᴜᴀɢᴇ:**
-│
-│❍ **ᴇɴɢʟɪsʜ**{en_tick}
-│❍ **ʜɪɴᴅɪ**{hi_tick}
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• ᴇɴɢʟɪsʜ{en_tick} •", callback_data="lang_en"),
-                InlineKeyboardButton(f"• ʜɪɴᴅɪ{hi_tick} •", callback_data="lang_hi")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=language_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Language Settings", show_alert=False)
-        
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error in language_callback: {e}", exc_info=True)
-        await callback_query.answer(f"Error loading language settings: {str(e)}", show_alert=True)
-
+    """Handle quality settings sub-menu"""
+    chat_id = callback_query.message.chat.id
+    settings = await db_manager.get_chat_settings(chat_id)
+    current = settings.get("quality", "high")
+    
+    keyboard = [
+        [
+            InlineKeyboardButton(f"{'✅ ' if current == 'low' else ''}Low", callback_data="set_q_low"),
+            InlineKeyboardButton(f"{'✅ ' if current == 'medium' else ''}Medium", callback_data="set_q_medium")
+        ],
+        [
+            InlineKeyboardButton(f"{'✅ ' if current == 'high' else ''}High", callback_data="set_q_high"),
+            InlineKeyboardButton(f"{'✅ ' if current == 'studio' else ''}Studio", callback_data="set_q_studio")
+        ],
+        [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
+    ]
+    
+    await callback_query.message.edit_caption(
+        caption="📡 **ꜱєʟєᴄᴛ ᴧᴜᴅɪσ ǫᴜᴧʟɪᴛʏ:**",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    await callback_query.answer("Quality Settings")
 
 async def volume_callback(client: Client, callback_query: CallbackQuery):
-    """Handle volume settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
-
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_vol = settings.get("volume", 100)
-        
-        v50_tick = " ✅" if current_vol == 50 else ""
-        v100_tick = " ✅" if current_vol == 100 else ""
-        v150_tick = " ✅" if current_vol == 150 else ""
-        v200_tick = " ✅" if current_vol == 200 else ""
-
-        volume_text = f"""
-╭───────────────────▣
-│❍ **ᴠσʟᴜϻє ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│🔊 **sᴇᴛ ᴅᴇꜰᴀᴜʟᴛ ᴠᴏʟᴜᴍᴇ:**
-│
-│❍ **50%**{v50_tick}
-│❍ **100%**{v100_tick}
-│❍ **150%**{v150_tick}
-│❍ **200%**{v200_tick}
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• 50%{v50_tick} •", callback_data="vol_50"),
-                InlineKeyboardButton(f"• 100%{v100_tick} •", callback_data="vol_100")
-            ],
-            [
-                InlineKeyboardButton(f"• 150%{v150_tick} •", callback_data="vol_150"),
-                InlineKeyboardButton(f"• 200%{v200_tick} •", callback_data="vol_200")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=volume_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Volume Settings", show_alert=False)
-        
-    except Exception as e:
-        await callback_query.answer("Error loading volume settings", show_alert=True)
-
-
-async def authmode_callback(client: Client, callback_query: CallbackQuery):
-    """Handle auth mode settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
-
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_auth = settings.get("auth_mode", "admins")
-        
-        e_tick = " ✅" if current_auth == "everyone" else ""
-        a_tick = " ✅" if current_auth == "admins" else ""
-
-        authmode_text = f"""
-╭───────────────────▣
-│❍ **ᴀᴜᴛʜ ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│🔐 **sᴇʟᴇᴄᴛ ᴀᴜᴛʜ ᴍᴏᴅᴇ:**
-│
-│❍ **ᴇᴠᴇʀʏᴏɴᴇ**{e_tick}
-│❍ **ᴀᴅᴍɪɴs**{a_tick}
-│
-│❍ /auth - ᴀᴅᴅ ᴀᴅᴍɪɴ
-│❍ /unauth - ʀᴇᴍᴏᴠᴇ ᴀᴅᴍɪɴ
-│❍ /authusers - ʟɪsᴛ ᴀᴅᴍɪɴs
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• ᴇᴠᴇʀʏᴏɴᴇ{e_tick} •", callback_data="auth_everyone"),
-                InlineKeyboardButton(f"• ᴀᴅᴍɪɴs{a_tick} •", callback_data="auth_admins")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=authmode_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Auth Mode Settings", show_alert=False)
-        
-    except Exception as e:
-        await callback_query.answer("Error loading auth mode settings", show_alert=True)
-
+    """Handle volume settings sub-menu"""
+    chat_id = callback_query.message.chat.id
+    settings = await db_manager.get_chat_settings(chat_id)
+    current = settings.get("volume", 100)
+    
+    keyboard = [
+        [
+            InlineKeyboardButton(f"{'✅ ' if current == 50 else ''}50%", callback_data="set_v_50"),
+            InlineKeyboardButton(f"{'✅ ' if current == 100 else ''}100%", callback_data="set_v_100")
+        ],
+        [
+            InlineKeyboardButton(f"{'✅ ' if current == 150 else ''}150%", callback_data="set_v_150"),
+            InlineKeyboardButton(f"{'✅ ' if current == 200 else ''}200%", callback_data="set_v_200")
+        ],
+        [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
+    ]
+    
+    await callback_query.message.edit_caption(
+        caption="🔊 **ꜱєʟєᴄᴛ ᴅєꜰᴧᴜʟᴛ ᴠσʟᴜϻє:**",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    await callback_query.answer("Volume Settings")
 
 async def videomode_callback(client: Client, callback_query: CallbackQuery):
-    """Handle video mode settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
+    """Handle video mode settings sub-menu"""
+    chat_id = callback_query.message.chat.id
+    settings = await db_manager.get_chat_settings(chat_id)
+    current = settings.get("video_mode", "720p")
+    
+    keyboard = [
+        [
+            InlineKeyboardButton(f"{'✅ ' if current == '480p' else ''}480p", callback_data="set_vid_480p"),
+            InlineKeyboardButton(f"{'✅ ' if current == '720p' else ''}720p", callback_data="set_vid_720p")
+        ],
+        [
+            InlineKeyboardButton(f"{'✅ ' if current == '1080p' else ''}1080p", callback_data="set_vid_1080p"),
+            InlineKeyboardButton(f"{'✅ ' if current == 'hd' else ''}HD", callback_data="set_vid_hd")
+        ],
+        [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
+    ]
+    
+    await callback_query.message.edit_caption(
+        caption="📹 **ꜱєʟєᴄᴛ ᴠɪᴅєσ ǫᴜᴧʟɪᴛʏ:**",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+    await callback_query.answer("Video Mode Settings")
 
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_v = settings.get("video_mode", "720p")
-        
-        v480_tick = " ✅" if current_v == "480p" else ""
-        v720_tick = " ✅" if current_v == "720p" else ""
-        v1080_tick = " ✅" if current_v == "1080p" else ""
-        vhd_tick = " ✅" if current_v == "hd" else ""
-
-        videomode_text = f"""
-╭───────────────────▣
-│❍ **ᴠɪᴅєσ ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│📹 **sᴇʟᴇᴄᴛ ᴠɪᴅᴇᴏ ᴍᴏᴅᴇ:**
-│
-│❍ **480ᴘ**{v480_tick}
-│❍ **720ᴘ**{v720_tick}
-│❍ **1080ᴘ**{v1080_tick}
-│❍ **ʜᴅ**{vhd_tick}
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• 480ᴘ{v480_tick} •", callback_data="video_480p"),
-                InlineKeyboardButton(f"• 720ᴘ{v720_tick} •", callback_data="video_720p")
-            ],
-            [
-                InlineKeyboardButton(f"• 1080ᴘ{v1080_tick} •", callback_data="video_1080p"),
-                InlineKeyboardButton(f"• ʜᴅ{vhd_tick} •", callback_data="video_hd")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=videomode_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Video Mode Settings", show_alert=False)
-        
-    except Exception as e:
-        await callback_query.answer("Error loading video mode settings", show_alert=True)
-
-
-async def cleanmode_callback(client: Client, callback_query: CallbackQuery):
-    """Handle clean mode settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
-
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_clean = settings.get("clean_mode", "enable")
-        
-        en_tick = " ✅" if current_clean == "enable" else ""
-        dis_tick = " ✅" if current_clean == "disable" else ""
-
-        cleanmode_text = f"""
-╭───────────────────▣
-│❍ **ᴄʟєᴧη ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│🧹 **ᴄʟᴇᴀɴ ᴍᴏᴅᴇ sᴇᴛᴛɪɴɢs:**
-│
-│❍ **ᴇɴᴀʙʟᴇ**{en_tick}
-│❍ **ᴅɪsᴀʙʟᴇ**{dis_tick}
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• ᴇɴᴀʙʟᴇ{en_tick} •", callback_data="clean_enable"),
-                InlineKeyboardButton(f"• ᴅɪsᴀʙʟᴇ{dis_tick} •", callback_data="clean_disable")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=cleanmode_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Clean Mode Settings", show_alert=False)
-        
-    except Exception as e:
-        await callback_query.answer("Error loading clean mode settings", show_alert=True)
-
-
-async def logging_callback(client: Client, callback_query: CallbackQuery):
-    """Handle logging settings"""
-    try:
-        if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
-            return
-
-        chat_id = callback_query.message.chat.id
-        settings = await db_manager.get_chat_settings(chat_id)
-        current_log = settings.get("logging", "enable")
-        
-        en_tick = " ✅" if current_log == "enable" else ""
-        dis_tick = " ✅" if current_log == "disable" else ""
-
-        logging_text = f"""
-╭───────────────────▣
-│❍ **ʟσɢɢɪηɢ ꜱᴇᴛᴛɪɴɢꜱ :**
-├───────────────────▣
-│
-│📝 **ʟᴏɢɢɪɴɢ sᴇᴛᴛɪɴɢs:**
-│
-│❍ **ᴇɴᴀʙʟᴇ**{en_tick}
-│❍ **ᴅɪsᴀʙʟᴇ**{dis_tick}
-│
-╰───────────────────▣
-"""
-        
-        selected_image = random.choice(SETTINGS_IMAGES)
-        
-        keyboard = InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton(f"• ᴇɴᴀʙʟᴇ{en_tick} •", callback_data="log_enable"),
-                InlineKeyboardButton(f"• ᴅɪsᴀʙʟᴇ{dis_tick} •", callback_data="log_disable")
-            ],
-            [
-                InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
-            ]
-        ])
-        
-        await callback_query.message.edit_media(
-            media=InputMediaPhoto(media=selected_image)
-        )
-        
-        await callback_query.message.edit_caption(
-            caption=logging_text,
-            reply_markup=keyboard
-        )
-        
-        await callback_query.answer("Logging Settings", show_alert=False)
-        
-    except Exception as e:
-        await callback_query.answer("Error loading logging settings", show_alert=True)
+async def update_sub_setting(client: Client, callback_query: CallbackQuery):
+    """Update settings from sub-menus"""
+    chat_id = callback_query.message.chat.id
+    data = callback_query.data
+    
+    if data.startswith("set_q_"):
+        val = data.replace("set_q_", "")
+        await db_manager.save_chat_settings(chat_id, {"quality": val})
+        await quality_callback(client, callback_query)
+    elif data.startswith("set_v_"):
+        val = int(data.replace("set_v_", ""))
+        await db_manager.save_chat_settings(chat_id, {"volume": val})
+        await volume_callback(client, callback_query)
+    elif data.startswith("set_vid_"):
+        val = data.replace("set_vid_", "")
+        await db_manager.save_chat_settings(chat_id, {"video_mode": val})
+        await videomode_callback(client, callback_query)

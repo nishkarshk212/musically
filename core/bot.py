@@ -264,9 +264,8 @@ class BotApp:
         )
         from handlers.stats import overall_stats_callback, close_stats_callback
         from handlers.settings import (
-            settings_callback, playmode_callback, quality_callback, language_callback,
-            volume_callback, authmode_callback, videomode_callback, cleanmode_callback,
-            logging_callback, skipmode_callback, set_mode_callback
+            settings_callback, quality_callback, volume_callback,
+            videomode_callback, set_mode_callback, update_sub_setting
         )
         
         self.app.add_handler(CallbackQueryHandler(help_callback, regex("^help_commands$")))
@@ -276,7 +275,8 @@ class BotApp:
         self.app.add_handler(CallbackQueryHandler(broadcast_callback_handler, regex("^bc_")))
         
         # Mode settings callbacks
-        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^(pm_|sm_)")))
+        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^toggle_")))
+        self.app.add_handler(CallbackQueryHandler(update_sub_setting, regex("^set_(q|v|vid)_")))
         
         # Category callback handlers
         self.app.add_handler(CallbackQueryHandler(auth_callback, regex("^cmd_auth$")))
@@ -304,15 +304,9 @@ class BotApp:
         
         # Settings callbacks
         self.app.add_handler(CallbackQueryHandler(settings_callback, regex("^settings_main$")))
-        self.app.add_handler(CallbackQueryHandler(playmode_callback, regex("^set_playmode$")))
-        self.app.add_handler(CallbackQueryHandler(skipmode_callback, regex("^set_skipmode$")))
         self.app.add_handler(CallbackQueryHandler(quality_callback, regex("^set_quality$")))
-        self.app.add_handler(CallbackQueryHandler(language_callback, regex("^set_language$")))
         self.app.add_handler(CallbackQueryHandler(volume_callback, regex("^set_volume$")))
-        self.app.add_handler(CallbackQueryHandler(authmode_callback, regex("^set_authmode$")))
         self.app.add_handler(CallbackQueryHandler(videomode_callback, regex("^set_videomode$")))
-        self.app.add_handler(CallbackQueryHandler(cleanmode_callback, regex("^set_cleanmode$")))
-        self.app.add_handler(CallbackQueryHandler(logging_callback, regex("^set_logging$")))
         
         logger.info("Handlers setup complete!")
     
