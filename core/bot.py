@@ -156,6 +156,7 @@ class BotApp:
         
         # Import and register all handlers
         from handlers.play import play_command
+        from handlers.play_local import play_local_file
         from handlers.queue import queue_command, clear_queue_command
         from handlers.control import skip_command, pause_command, resume_command, stop_command, volume_command
         from handlers.loop import loop_command
@@ -191,6 +192,15 @@ class BotApp:
         self.app.add_handler(MessageHandler(start_command, command("start")))
         self.app.add_handler(MessageHandler(help_command, command("help")))
         self.app.add_handler(MessageHandler(play_command, command("play")))
+        
+        # Local file playback - auto-detect audio/video files sent to the bot
+        # This handles files sent directly (without /play command)
+        self.app.add_handler(MessageHandler(play_local_file, 
+            (filters.audio | filters.video | filters.document) & 
+            filters.group & 
+            ~filters.command
+        ))
+        
         self.app.add_handler(MessageHandler(queue_command, command("queue")))
         self.app.add_handler(MessageHandler(clear_queue_command, command("clearqueue")))
         self.app.add_handler(MessageHandler(skip_command, command("skip")))
