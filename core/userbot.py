@@ -23,6 +23,7 @@ class AssistantManager:
         self.assistant_names: List[str] = []
         self.assistant_usernames: List[str] = []
         self.current_assistant_index = 0
+        self._membership_cache = {} # Cache for membership checks: {chat_id: (is_member, timestamp)}
         
         # Load session strings from config
         self.session_strings = [
@@ -109,15 +110,24 @@ class AssistantManager:
         if not self.assistants:
             return False
         
+        # Check cache first (valid for 1 hour)
+        import time
+        if chat_id in self._membership_cache:
+            is_member, timestamp = self._membership_cache[chat_id]
+            if time.time() - timestamp < 3600:
+                return is_member
+
         for assistant in self.assistants:
             try:
                 is_member = await self._check_membership(assistant, chat_id)
                 if is_member:
+                    self._membership_cache[chat_id] = (True, time.time())
                     return True
             except Exception as e:
                 logger.debug(f"Assistant {assistant.me.first_name} membership check failed: {e}")
                 continue
         
+        self._membership_cache[chat_id] = (False, time.time())
         return False
     
     def get_assistant_by_id(self, chat_id: int) -> Optional[Client]:

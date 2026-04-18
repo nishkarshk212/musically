@@ -9,7 +9,7 @@ from typing import Optional, Dict
 from pyrogram import Client
 from pyrogram.types import Chat
 from pytgcalls import PyTgCalls
-from pytgcalls.types import AudioQuality, MediaStream, Update, StreamEnded
+from pytgcalls.types import AudioQuality, MediaStream, Update, StreamAudioEnded
 from pytgcalls.types import ChatUpdate
 from core.queue import queue_manager, Song
 from config import DEFAULT_VOLUME
@@ -168,12 +168,12 @@ class CallManager:
                 logger.info(f"Playing from URL: {song.file_path}")
             
             # Small delay to ensure file is fully written (prevents audio breaking)
-            # Reduced from 0.5s for faster playback
+            # Reduced for ultra-fast playback
             if not is_url:
                 if not os.path.exists(song.file_path):
-                     await asyncio.sleep(0.3)
+                     await asyncio.sleep(0.1) # Reduced from 0.3s
                 else:
-                     await asyncio.sleep(0.1)
+                     pass # Removed 0.1s delay if file already exists
             
             # Create media stream - HIGH quality is often more stable for voice chats than STUDIO
             stream = MediaStream(
@@ -336,7 +336,7 @@ class CallManager:
                     return
 
             # Only handle if the stream actually ended
-            if not isinstance(update, StreamEnded):
+            if not isinstance(update, StreamAudioEnded):
                 return
             
             # Skip current song and get next

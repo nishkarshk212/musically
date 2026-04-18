@@ -160,23 +160,22 @@ async def play_command(client: Client, message: Message):
             )
             return
         
-        # PERF PRIORITY: Show searching message IMMEDIATELY (approx 100-200ms)
+        # START SEARCH AND JOIN IN PARALLEL IMMEDIATELY
+        # This is the secret to sub-1s playback
+        join_task = asyncio.create_task(call_manager.join_voice_chat(chat_id, chat_username))
+        
+        # Start search/extraction task immediately
+        is_url = query.startswith(("http://", "https://"))
+        if is_url:
+            search_task = asyncio.create_task(downloader.extract_info(query))
+        else:
+            search_task = asyncio.create_task(downloader.search_and_download(query))
+
+        # Show searching message while background tasks are running
         status_msg = await message.reply_text("🔍 **δєᴧʀᴄʜɪηɢ...**")
 
-        # START JOINING VC IN BACKGROUND FOR SPEED
-        # This prioritizes playing the song as requested
-        # Use low-level call to ensure fastest possible join
-        join_task = asyncio.create_task(call_manager.join_voice_chat(chat_id, chat_username))
-
-        # Check if query is URL and process asynchronously for speed
-        is_url = query.startswith(("http://", "https://"))
-        
-        # Start search/extraction
-        if is_url:
-            song_info = await downloader.extract_info(query)
-        else:
-            # SEARCH PRIORITY: Use ultra-fast search
-            song_info = await downloader.search_and_download(query)
+        # Wait for search to complete
+        song_info = await search_task
             
         if not song_info:
             await status_msg.edit_text(ERROR_NO_RESULTS.format(query=query))

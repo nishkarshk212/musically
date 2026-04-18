@@ -37,6 +37,13 @@ class Downloader:
     def __init__(self):
         self.download_dir = DOWNLOAD_DIR
         os.makedirs(self.download_dir, exist_ok=True)
+        self._session = None
+        self._search_cache = {} # Cache for search results: {query: SongInfo}
+
+    async def _get_session(self):
+        if self._session is None or self._session.closed:
+            self._session = aiohttp.ClientSession()
+        return self._session
     
     def get_ydl_opts(self, output_path: str) -> Dict:
         """Get yt-dlp options"""
@@ -134,12 +141,12 @@ class Downloader:
             # Use NexGen API to download
             logger.info(f"🎵 [NEXGEN] Using API: {NEXGEN_API_URL}/song/{video_id}")
             
-            async with aiohttp.ClientSession() as session:
-                # Step 1: Get the stream URL
-                api_url = f"{NEXGEN_API_URL}/song/{video_id}"
-                params = {"api": API_KEY} if API_KEY else {}
-                
-                async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=60)) as response:
+            session = await self._get_session()
+            # Step 1: Get the stream URL
+            api_url = f"{NEXGEN_API_URL}/song/{video_id}"
+            params = {"api": API_KEY} if API_KEY else {}
+            
+            async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=60)) as response:
                     if response.status == 200:
                         data = await response.json()
                         if data:
@@ -174,6 +181,11 @@ class Downloader:
     async def search_and_download(self, query: str) -> Optional[SongInfo]:
         """Search for a song and download it using yt-dlp search + NexGen API download"""
         try:
+            # Check cache first
+            if query in self._search_cache:
+                logger.info(f"🔍 [CACHE] Using cached result for: {query}")
+                return self._search_cache[query]
+
             # Search on YouTube using yt-dlp - ULTRA FAST options
             search_url = f"ytsearch1:{query}"
             
@@ -214,20 +226,22 @@ class Downloader:
             
             # Use direct stream for fastest possible playback
             # Get the stream link from NexGen API
-            async with aiohttp.ClientSession() as session:
-                api_url = f"{NEXGEN_API_URL}/song/{video_id}"
-                params = {"api": API_KEY} if API_KEY else {}
-                
-                async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=30)) as response:
+            session = await self._get_session()
+            api_url = f"{NEXGEN_API_URL}/song/{video_id}"
+            params = {"api": API_KEY} if API_KEY else {}
+            
+            async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=30)) as response:
                     if response.status == 200:
                         data = await response.json()
                         if data and data.get("status") == "done" and data.get("link"):
                             song_info.file_path = data.get("link")
+                            self._search_cache[query] = song_info
                             return song_info
             
             # Fallback to standard download if stream link not immediately available
             file_path = await self.download_song(video_url, song_info)
             if file_path:
+                self._search_cache[query] = song_info
                 return song_info
             
             return None
