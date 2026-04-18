@@ -35,7 +35,7 @@ async def skip_command(client: Client, message: Message):
         user_mention = message.from_user.mention
         
         if next_song:
-            # Send simple skip message
+            # Send ONLY skip confirmation message
             await message.reply_text(
                 f"<blockquote>"
                 f"<b>⏭️ δᴋɪᴩᴩєᴅ! ❞</b>"
@@ -43,15 +43,8 @@ async def skip_command(client: Client, message: Message):
                 parse_mode=ParseMode.HTML
             )
             
-            # Send the Now Playing message of the current (next) song
-            from handlers.play import send_playing_message
-            asyncio.create_task(
-                send_playing_message(
-                    client=client,
-                    chat_id=chat_id,
-                    song=next_song
-                )
-            )
+            # DO NOT send playing message here - let handle_stream_ended do it
+            # This prevents duplicate messages
         else:
             # Create keyboard with close button
             keyboard = InlineKeyboardMarkup([

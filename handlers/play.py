@@ -163,12 +163,12 @@ async def play_command(client: Client, message: Message):
         # Check if query is a URL
         is_url = query.startswith(("http://", "https://", "www."))
         
-        # FAST CACHE CHECK: If song is in cache, play IMMEDIATELY without any message
+        # FAST CACHE CHECK: If song is in cache, play IMMEDIATELY
         if not is_url and query in downloader._search_cache:
             song_info = downloader._search_cache[query]
             logger.info(f"🚀 [ULTRA-FAST] Cache hit for '{query}', playing immediately")
             
-            # Create song object FIRST
+            # Create song object
             song = Song(
                 title=song_info.title,
                 duration=song_info.duration,
@@ -186,14 +186,14 @@ async def play_command(client: Client, message: Message):
                 queue.current_song = song
                 queue.is_playing = True
                 
-                # JOIN AND PLAY IN PARALLEL - Priority to play_song
+                # JOIN AND PLAY IN PARALLEL
                 join_task = asyncio.create_task(call_manager.join_voice_chat(chat_id, chat_username))
                 play_task = asyncio.create_task(call_manager.play_song(chat_id, song))
                 
-                # Wait for play to start (join will complete in background)
+                # Wait for play to start
                 await play_task
                 
-                # Send playing message AFTER playback starts (non-blocking)
+                # Send ONLY ONE playing message
                 asyncio.create_task(send_playing_message(client, chat_id, song, song_info))
                 return
             else:
@@ -201,8 +201,8 @@ async def play_command(client: Client, message: Message):
                 await message.reply_text(f"✅ **ᴧᴅᴅєᴅ ᴛᴏ ǫᴜєᴜᴇ ᴧᴛ #{position}**")
                 return
 
-        # START SEARCH AND JOIN IN PARALLEL IMMEDIATELY
-        # PRIORITY 1: Start joining voice chat FIRST (doesn't need search results)
+        # START SEARCH AND JOIN IN PARALLEL
+        # PRIORITY 1: Start joining voice chat FIRST
         join_task = asyncio.create_task(call_manager.join_voice_chat(chat_id, chat_username))
         
         # PRIORITY 2: Start search/download in parallel
@@ -211,7 +211,7 @@ async def play_command(client: Client, message: Message):
         else:
             search_task = asyncio.create_task(downloader.search_and_download(query))
 
-        # Show searching message ONLY if search takes more than 300ms (reduced from 500ms)
+        # Show searching message ONLY if search takes more than 300ms
         status_msg = None
         try:
             song_info = await asyncio.wait_for(asyncio.shield(search_task), timeout=0.3)
@@ -251,7 +251,7 @@ async def play_command(client: Client, message: Message):
         is_already_playing = call_manager and call_manager.is_playing(chat_id)
         
         if is_already_playing:
-            # ALREADY PLAYING - Add to queue
+            # ALREADY PLAYING - Add to queue (NO duplicate message)
             position = queue.add_song(song)
             
             keyboard = InlineKeyboardMarkup([[InlineKeyboardButton("ᴄʟσꜱє", callback_data="close_playing")]])
@@ -263,6 +263,7 @@ async def play_command(client: Client, message: Message):
                 position=position
             )
             
+            # ONLY edit status message or reply ONCE
             if status_msg:
                 await status_msg.edit_text(queued_text, reply_markup=keyboard, parse_mode=ParseMode.HTML)
             else:
@@ -278,25 +279,25 @@ async def play_command(client: Client, message: Message):
                 return
             
             try:
-                # Set as current song IMMEDIATELY to prevent race conditions
+                # Set as current song IMMEDIATELY
                 queue.current_song = song
                 queue.is_playing = True
                 
-                # PRIORITY: Play song IMMEDIATELY (join_task already running in background)
+                # Play song IMMEDIATELY (join_task already running)
                 play_task = asyncio.create_task(call_manager.play_song(chat_id, song))
                 
-                # Delete the status message if it exists (non-blocking)
+                # Delete status message if exists (non-blocking)
                 if status_msg:
                     asyncio.create_task(status_msg.delete())
                 
                 # Wait for playback to start
                 await play_task
                 
-                # Ensure join_task is finished (should be done by now)
+                # Ensure join_task is finished
                 if not join_task.done():
                     await join_task
                 
-                # Send playing message in background (non-blocking)
+                # Send ONLY ONE playing message in background
                 asyncio.create_task(
                     send_playing_message(
                         client=client,
@@ -343,7 +344,3 @@ async def play_command(client: Client, message: Message):
         ])
         
         await message.reply_text(sorry_text, reply_markup=keyboard)
-        
-        # Restart the bot service (Only if it's a fatal error, not just a playback issue)
-        # if bot_app:
-        #     await bot_app.restart()
