@@ -394,8 +394,6 @@ async def language_callback(client: Client, callback_query: CallbackQuery):
             ]
         ])
         
-        await callback_query.answer("Language Settings", show_alert=False)
-        
         await callback_query.message.edit_media(
             media=InputMediaPhoto(media=selected_image)
         )
@@ -404,6 +402,8 @@ async def language_callback(client: Client, callback_query: CallbackQuery):
             caption=language_text,
             reply_markup=keyboard
         )
+        
+        await callback_query.answer("Language Settings", show_alert=False)
         
     except Exception as e:
         import logging
