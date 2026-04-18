@@ -65,11 +65,11 @@ def admin_check(func):
                         return await func(client, message, *args, **kwargs)
                     else:
                         await message.reply_text(
-                            "❌ ᴛʜɪꜱ ᴄσϻϻᴧηᴅ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ σηʟʏ!"
+                            "❌ ᴛʜɪꜱ ᴄσϻϻᴧηᴅ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ σηʟʏ!"
                         )
                         return
             
-            # Get chat member status (API call)
+            # Get user status in the chat
             member = await message.chat.get_member(user_id)
             is_admin = member.status in ['administrator', 'creator']
             
@@ -80,7 +80,7 @@ def admin_check(func):
                 return await func(client, message, *args, **kwargs)
             else:
                 await message.reply_text(
-                    "❌ ᴛʜɪꜱ ᴄσϻϻᴧηᴅ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ σηʟʏ!"
+                    "❌ ᴛʜɪꜱ ᴄσϻϻᴧηᴅ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ σηʟʏ!"
                 )
                 return
                 
