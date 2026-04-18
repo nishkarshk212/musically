@@ -165,6 +165,7 @@ async def play_command(client: Client, message: Message):
 
         # START JOINING VC IN BACKGROUND FOR SPEED
         # This prioritizes playing the song as requested
+        # Use low-level call to ensure fastest possible join
         join_task = asyncio.create_task(call_manager.join_voice_chat(chat_id, chat_username))
 
         # Check if query is URL and process asynchronously for speed
@@ -174,6 +175,7 @@ async def play_command(client: Client, message: Message):
         if is_url:
             song_info = await downloader.extract_info(query)
         else:
+            # SEARCH PRIORITY: Use ultra-fast search
             song_info = await downloader.search_and_download(query)
             
         if not song_info:

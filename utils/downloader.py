@@ -189,6 +189,7 @@ class Downloader:
             
             loop = asyncio.get_event_loop()
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                # RUN IN THREAD TO PREVENT EVENT LOOP BLOCKING
                 info = await loop.run_in_executor(None, lambda: ydl.extract_info(search_url, download=False))
             
             if not info or 'entries' not in info or not info['entries']:
@@ -211,7 +212,20 @@ class Downloader:
             song_info.video_id = video_id
             song_info.url = video_url
             
-            # Download using NexGen API (non-blocking)
+            # Use direct stream for fastest possible playback
+            # Get the stream link from NexGen API
+            async with aiohttp.ClientSession() as session:
+                api_url = f"{NEXGEN_API_URL}/song/{video_id}"
+                params = {"api": API_KEY} if API_KEY else {}
+                
+                async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=30)) as response:
+                    if response.status == 200:
+                        data = await response.json()
+                        if data and data.get("status") == "done" and data.get("link"):
+                            song_info.file_path = data.get("link")
+                            return song_info
+            
+            # Fallback to standard download if stream link not immediately available
             file_path = await self.download_song(video_url, song_info)
             if file_path:
                 return song_info

@@ -63,15 +63,15 @@ def admin_check(func):
                 if current_time - cached_time < CACHE_TTL:
                     if is_admin:
                         return await func(client, message, *args, **kwargs)
-                    else:
-                        await message.reply_text(
-                            "❌ ᴛʜɪꜱ ᴄσϻϻᴧηᴅ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ σηʟʏ!"
-                        )
-                        return
+                    # Don't return if not admin from cache, re-check once just in case status changed
             
             # Get user status in the chat
             member = await message.chat.get_member(user_id)
-            is_admin = member.status in ['administrator', 'creator']
+            # Log the status for debugging
+            logger.info(f"User {user_id} status in {chat_id}: {member.status}")
+            
+            from pyrogram.enums import ChatMemberStatus
+            is_admin = member.status in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]
             
             # Update cache
             _admin_cache[cache_key] = (current_time, is_admin)
