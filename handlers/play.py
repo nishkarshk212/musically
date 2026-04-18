@@ -198,7 +198,8 @@ async def play_command(client: Client, message: Message):
             views=str(getattr(song_info, 'views', '0'))
         )
         
-        # Check if anything is already playing in the chat
+        # FINAL CHECK: Has the bot started playing something else in the last 2 seconds?
+        # This prevents duplicate messages if multiple commands were sent rapidly
         is_already_playing = call_manager and call_manager.is_playing(chat_id)
         
         if is_already_playing:
@@ -235,7 +236,7 @@ async def play_command(client: Client, message: Message):
                 
                 # Join voice chat and start playback
                 # (join_voice_chat handles case where already joined)
-                await call_manager.join_voice_chat(chat_id, chat_username)
+                # await call_manager.join_voice_chat(chat_id, chat_username) # Removed redundant join
                 await call_manager.play_song(chat_id, song)
                 
                 # Delete the status message
@@ -252,7 +253,19 @@ async def play_command(client: Client, message: Message):
                 )
                 
             except Exception as play_error:
-                await status_msg.edit_text(f"❌ Failed to play: {str(play_error)}")
+                # Reset state if playback failed
+                queue.current_song = None
+                queue.is_playing = False
+                
+                # Check for specific admin required error
+                error_msg = str(play_error)
+                if "CHAT_ADMIN_REQUIRED" in error_msg:
+                    await status_msg.edit_text(
+                        "❌ **ᴛєʟєɢʀᴧϻ ꜱᴧʏꜱ: [400 CHAT_ADMIN_REQUIRED]**\n\n"
+                        "ᴛʜє ᴧꜱꜱɪꜱᴛᴧηᴛ ηєєᴅꜱ ᴛσ ʙє ᴧη **ᴧᴅϻɪη** ᴡɪᴛʜ ᴘєʀϻɪꜱꜱɪση ᴛσ **ϻᴧηᴧɢє ᴠσɪᴄє ᴄʜᴧᴛꜱ** ᴛσ ꜱᴛᴧʀᴛ ᴛʜє ꜱᴛʀєᴧϻ!"
+                    )
+                else:
+                    await status_msg.edit_text(f"❌ Failed to play: {error_msg}")
                 raise
         
         logger.info(f"Play command executed by {message.from_user.id} in {chat_id}")
