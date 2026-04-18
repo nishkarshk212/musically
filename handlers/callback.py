@@ -632,11 +632,20 @@ async def play_callback(client: Client, callback_query: CallbackQuery):
 │
 │v : sᴛᴀɴᴅs ғᴏʀ ᴠɪᴅᴇᴏ ᴩʟᴀʏ.
 │force : sᴛᴀɴᴅs ғᴏʀ ғᴏʀᴄᴇ ᴩʟᴀʏ.
+│fplay : sᴛᴀɴᴅs ғᴏʀ ғɪʟᴇ ᴩʟᴀʏ.
 │
 │❍ /play ᴏʀ /vplay : sᴛᴀʀᴛs sᴛʀᴇᴀᴍɪɴɢ ᴛʜᴇ
 │   ʀᴇǫᴜᴇsᴛᴇᴅ ᴛʀᴀᴄᴋ ᴏɴ ᴠɪᴅᴇᴏᴄʜᴀᴛ.
 │❍ /playforce ᴏʀ /vplayforce : sᴛᴏᴩs ᴛʜᴇ
 │   ᴏɴɢᴏɪɴɢ sᴛʀᴇᴀᴍ ᴀɴᴅ sᴛᴀʀᴛs sᴛʀᴇᴀᴍɪɴɢ.
+│❍ /fplay : Rᴇᴩʟʏ ᴛᴏ ᴀɴ ᴀᴜᴅɪᴏ/ᴠɪᴅᴇᴏ ғɪʟᴇ
+│   ᴛᴏ ᴩʟᴀʏ ɪᴛ ɪɴ ᴠᴏɪᴄᴇ ᴄʜᴀᴛ.
+│❍ Sᴇɴᴅ ғɪʟᴇ ᴅɪʀᴇᴄᴛʟʏ : Aᴜᴛᴏ-ᴅᴇᴛᴇᴄᴛs
+│   ᴀɴᴅ ᴩʟᴀʏs ᴀᴜᴅɪᴏ/ᴠɪᴅᴇᴏ ғɪʟᴇs.
+│
+│📁 Sᴜᴩᴩᴏʀᴛᴇᴅ Fᴏʀᴍᴀᴛs:
+│• Aᴜᴅɪᴏ: MP3, M4A, AAC, OGG, WAV, FLAC
+│• Vɪᴅᴇᴏ: MP4, MKV, AVI, WEBM, MOV, FLV
 │
 ╰───────────────────▣
 """

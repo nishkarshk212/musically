@@ -130,8 +130,22 @@ def is_supported_file(file_info: dict) -> bool:
     if not file_info['file_id']:
         return False
     
-    supported_audio = ['audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/aac', 'audio/ogg', 'audio/wav', 'audio/flac']
-    supported_video = ['video/mp4', 'video/webm', 'video/ogg', 'video/x-matroska']
+    # Extended list of supported audio formats
+    supported_audio = [
+        'audio/mpeg', 'audio/mp3', 'audio/mp4', 'audio/x-m4a', 'audio/m4a',
+        'audio/aac', 'audio/ogg', 'audio/wav', 'audio/x-wav', 'audio/flac',
+        'audio/x-flac', 'audio/opus', 'audio/x-opus', 'audio/webm',
+        'audio/x-ms-wma', 'audio/ape', 'audio/x-ape', 'audio/amr',
+        'audio/3gpp', 'audio/ac3', 'audio/vnd.dlna.adts'
+    ]
+    
+    # Extended list of supported video formats
+    supported_video = [
+        'video/mp4', 'video/webm', 'video/ogg', 'video/x-matroska',
+        'video/quicktime', 'video/x-msvideo', 'video/x-flv', 'video/x-mkv',
+        'video/avi', 'video/x-ms-wmv', 'video/mpeg', 'video/3gpp',
+        'video/x-m4v', 'video/mp2t', 'video/MP2T'
+    ]
     
     mime_type = file_info['mime_type'] or ''
     
@@ -139,9 +153,16 @@ def is_supported_file(file_info: dict) -> bool:
     if mime_type in supported_audio or mime_type in supported_video:
         return True
     
-    # Also check file extension
+    # Also check file extension (expanded list)
     file_name = file_info['file_name'] or ''
-    supported_extensions = ['.mp3', '.mp4', '.m4a', '.aac', '.ogg', '.wav', '.flac', '.webm', '.mkv']
+    supported_extensions = [
+        # Audio
+        '.mp3', '.mp4', '.m4a', '.aac', '.ogg', '.wav', '.flac',
+        '.opus', '.wma', '.ape', '.amr', '.3gp', '.ac3', '.webm',
+        # Video
+        '.mkv', '.avi', '.wmv', '.mov', '.flv', '.mpeg', '.mpg',
+        '.m4v', '.ts', '.3gpp'
+    ]
     
     for ext in supported_extensions:
         if file_name.lower().endswith(ext):
@@ -195,17 +216,24 @@ async def play_local_file(client: Client, message: Message):
         chat_username = message.chat.username
         queue = queue_manager.get_queue(chat_id)
         
-        # Get file information from the replied message
-        if not message.reply_to_message:
-            await message.reply_text(
-                "❌ **Please reply to an audio, video, or document file!**\n\n"
-                "📁 Supported formats:\n"
-                "• Audio: MP3, M4A, AAC, OGG, WAV, FLAC\n"
-                "• Video: MP4, WEBM, MKV"
-            )
-            return
+        # Check if it's a command (/fplay) - then require reply
+        is_command = message.command and message.command[0].lower() in ['fplay', 'play']
         
-        reply_msg = message.reply_to_message
+        if is_command:
+            # Must reply to a file
+            if not message.reply_to_message:
+                await message.reply_text(
+                    "❌ **Please reply to an audio, video, or document file!**\n\n"
+                    "📁 Supported formats:\n"
+                    "• Audio: MP3, M4A, AAC, OGG, WAV, FLAC, OPUS, WMA\n"
+                    "• Video: MP4, MKV, AVI, WEBM, MOV, FLV"
+                )
+                return
+            reply_msg = message.reply_to_message
+        else:
+            # Direct file send - use the current message
+            reply_msg = message
+        
         file_info = get_file_info(reply_msg)
         
         # Check if file is supported
@@ -213,8 +241,8 @@ async def play_local_file(client: Client, message: Message):
             await message.reply_text(
                 "❌ **Unsupported file format!**\n\n"
                 "📁 Please send one of these formats:\n"
-                "• Audio: MP3, M4A, AAC, OGG, WAV, FLAC\n"
-                "• Video: MP4, WEBM, MKV"
+                "• Audio: MP3, M4A, AAC, OGG, WAV, FLAC, OPUS, WMA, APE\n"
+                "• Video: MP4, MKV, AVI, WEBM, MOV, FLV, WMV"
             )
             return
         

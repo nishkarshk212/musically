@@ -193,6 +193,9 @@ class BotApp:
         self.app.add_handler(MessageHandler(help_command, command("help")))
         self.app.add_handler(MessageHandler(play_command, command("play")))
         
+        # Local file playback - /fplay command (reply to file)
+        self.app.add_handler(MessageHandler(play_local_file, command("fplay")))
+        
         # Local file playback - auto-detect audio/video files sent to groups
         # This handles files sent directly (without /play command)
         def is_not_command(client, update):
