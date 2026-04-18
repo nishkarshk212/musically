@@ -275,6 +275,18 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
             await db_manager.save_chat_settings(chat_id, {"logging": status})
             await callback_query.answer(f"✅ Logging {status}d!", show_alert=False)
             await logging_callback(client, callback_query)
+            
+        elif data.startswith("video_"):
+            mode = data.replace("video_", "")
+            await db_manager.save_chat_settings(chat_id, {"video_mode": mode})
+            await callback_query.answer(f"✅ Video mode set to {mode}!", show_alert=False)
+            await videomode_callback(client, callback_query)
+            
+        elif data.startswith("auth_"):
+            mode = data.replace("auth_", "")
+            await db_manager.save_chat_settings(chat_id, {"auth_mode": mode})
+            await callback_query.answer(f"✅ Auth mode set to {mode}!", show_alert=False)
+            await authmode_callback(client, callback_query)
 
     except Exception as e:
         await callback_query.answer("Error saving setting", show_alert=True)
@@ -465,12 +477,26 @@ async def volume_callback(client: Client, callback_query: CallbackQuery):
 async def authmode_callback(client: Client, callback_query: CallbackQuery):
     """Handle auth mode settings"""
     try:
-        authmode_text = """
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_auth = settings.get("auth_mode", "admins")
+        
+        e_tick = " ✅" if current_auth == "everyone" else ""
+        a_tick = " ✅" if current_auth == "admins" else ""
+
+        authmode_text = f"""
 ╭───────────────────▣
 │❍ **ᴀᴜᴛʜ ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │🔐 **sᴇʟᴇᴄᴛ ᴀᴜᴛʜ ᴍᴏᴅᴇ:**
+│
+│❍ **ᴇᴠᴇʀʏᴏɴᴇ**{e_tick}
+│❍ **ᴀᴅᴍɪɴs**{a_tick}
 │
 │❍ /auth - ᴀᴅᴅ ᴀᴅᴍɪɴ
 │❍ /unauth - ʀᴇᴍᴏᴠᴇ ᴀᴅᴍɪɴ
@@ -483,8 +509,8 @@ async def authmode_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• ᴇᴠᴇʀʏᴏɴᴇ •", callback_data="auth_everyone"),
-                InlineKeyboardButton("• ᴀᴅᴍɪɴs •", callback_data="auth_admins")
+                InlineKeyboardButton(f"• ᴇᴠᴇʀʏᴏɴᴇ{e_tick} •", callback_data="auth_everyone"),
+                InlineKeyboardButton(f"• ᴀᴅᴍɪɴs{a_tick} •", callback_data="auth_admins")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
@@ -509,15 +535,30 @@ async def authmode_callback(client: Client, callback_query: CallbackQuery):
 async def videomode_callback(client: Client, callback_query: CallbackQuery):
     """Handle video mode settings"""
     try:
-        videomode_text = """
+        if not await is_admin_check(callback_query):
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
+            return
+
+        chat_id = callback_query.message.chat.id
+        settings = await db_manager.get_chat_settings(chat_id)
+        current_v = settings.get("video_mode", "720p")
+        
+        v480_tick = " ✅" if current_v == "480p" else ""
+        v720_tick = " ✅" if current_v == "720p" else ""
+        v1080_tick = " ✅" if current_v == "1080p" else ""
+        vhd_tick = " ✅" if current_v == "hd" else ""
+
+        videomode_text = f"""
 ╭───────────────────▣
 │❍ **ᴠɪᴅєσ ϻσᴅє ꜱᴇᴛᴛɪɴɢꜱ :**
 ├───────────────────▣
 │
 │📹 **sᴇʟᴇᴄᴛ ᴠɪᴅᴇᴏ ᴍᴏᴅᴇ:**
 │
-│❍ /vplay - ᴘʟᴀʏ ᴠɪᴅᴇᴏ
-│❍ /cvplay - ᴄʜᴀɴɴᴇʟ ᴠɪᴅᴇᴏ
+│❍ **480ᴘ**{v480_tick}
+│❍ **720ᴘ**{v720_tick}
+│❍ **1080ᴘ**{v1080_tick}
+│❍ **ʜᴅ**{vhd_tick}
 │
 ╰───────────────────▣
 """
@@ -526,12 +567,12 @@ async def videomode_callback(client: Client, callback_query: CallbackQuery):
         
         keyboard = InlineKeyboardMarkup([
             [
-                InlineKeyboardButton("• 480ᴘ •", callback_data="video_480"),
-                InlineKeyboardButton("• 720ᴘ •", callback_data="video_720")
+                InlineKeyboardButton(f"• 480ᴘ{v480_tick} •", callback_data="video_480p"),
+                InlineKeyboardButton(f"• 720ᴘ{v720_tick} •", callback_data="video_720p")
             ],
             [
-                InlineKeyboardButton("• 1080ᴘ •", callback_data="video_1080"),
-                InlineKeyboardButton("• ʜᴅ •", callback_data="video_hd")
+                InlineKeyboardButton(f"• 1080ᴘ{v1080_tick} •", callback_data="video_1080p"),
+                InlineKeyboardButton(f"• ʜᴅ{vhd_tick} •", callback_data="video_hd")
             ],
             [
                 InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")
