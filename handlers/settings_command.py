@@ -6,6 +6,7 @@ Opens the settings panel
 from pyrogram import Client
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pyrogram.enums import ChatAction
+from utils.decorators import admin_check
 import random
 import logging
 
@@ -27,6 +28,7 @@ SETTINGS_IMAGES = [
 ]
 
 
+@admin_check
 async def settings_command(client: Client, message: Message):
     """Handle /settings command"""
     try:

@@ -47,7 +47,7 @@ async def settings_callback(client: Client, callback_query: CallbackQuery):
     """Handle settings button callback"""
     try:
         if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
             return
 
         # Settings message text
@@ -108,7 +108,7 @@ async def playmode_callback(client: Client, callback_query: CallbackQuery):
     """Handle play mode settings"""
     try:
         if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
             return
 
         chat_id = callback_query.message.chat.id
@@ -168,7 +168,7 @@ async def skipmode_callback(client: Client, callback_query: CallbackQuery):
     """Handle skip mode settings"""
     try:
         if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
             return
 
         chat_id = callback_query.message.chat.id
@@ -228,7 +228,7 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
     """Handle setting individual modes"""
     try:
         if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ᴧᴅϻɪηꜱ!", show_alert=True)
+            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
             return
 
         chat_id = callback_query.message.chat.id
