@@ -179,11 +179,11 @@ class Downloader:
             return None
     
     async def search_and_download(self, query: str) -> Optional[SongInfo]:
-        """Search for a song and download it using yt-dlp search + NexGen API download"""
+        """Search for a song and download it using yt-dlp search + NexGen API download - ULTRA FAST"""
         try:
             # Check cache first
             if query in self._search_cache:
-                logger.info(f"🔍 [CACHE] Using cached result for: {query}")
+                logger.info(f"🔍 [CACHE HIT] Using cached result for: {query}")
                 return self._search_cache[query]
 
             # Search on YouTube using yt-dlp - ULTRA FAST options
@@ -192,11 +192,12 @@ class Downloader:
             ydl_opts = {
                 'quiet': True,
                 'no_warnings': True,
-                'extract_flat': True,  # FAST: don't extract metadata of entries
+                'extract_flat': 'in_playlist',  # FASTEST: don't extract metadata
                 'skip_download': True,
                 'playlist_items': '1',
                 'nocheckcertificate': True,
-                'socket_timeout': 5,
+                'socket_timeout': 3,  # Reduced from 5s
+                'retries': 1,  # Minimal retries for speed
             }
             
             loop = asyncio.get_event_loop()
@@ -230,12 +231,13 @@ class Downloader:
             api_url = f"{NEXGEN_API_URL}/song/{video_id}"
             params = {"api": API_KEY} if API_KEY else {}
             
-            async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=30)) as response:
+            async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=15)) as response:
                     if response.status == 200:
                         data = await response.json()
                         if data and data.get("status") == "done" and data.get("link"):
                             song_info.file_path = data.get("link")
                             self._search_cache[query] = song_info
+                            logger.info(f"✅ [NEXGEN] Stream link obtained in milliseconds")
                             return song_info
             
             # Fallback to standard download if stream link not immediately available
