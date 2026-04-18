@@ -193,19 +193,9 @@ class BotApp:
         self.app.add_handler(MessageHandler(help_command, command("help")))
         self.app.add_handler(MessageHandler(play_command, command("play")))
         
-        # Local file playback - /fplay command (reply to file)
+        # Local file playback - /fplay command ONLY (reply to file)
+        # Removed auto-detect to prevent double messages
         self.app.add_handler(MessageHandler(play_local_file, command("fplay")))
-        
-        # Local file playback - auto-detect audio/video files sent to groups
-        # This handles files sent directly (without /play command)
-        def is_not_command(client, update):
-            """Check if message is not a command"""
-            return not update.command
-        
-        self.app.add_handler(MessageHandler(play_local_file, 
-            (filters.audio | filters.video | filters.document) & 
-            filters.group
-        ))
         
         self.app.add_handler(MessageHandler(queue_command, command("queue")))
         self.app.add_handler(MessageHandler(clear_queue_command, command("clearqueue")))
