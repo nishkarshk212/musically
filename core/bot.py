@@ -265,7 +265,8 @@ class BotApp:
         from handlers.stats import overall_stats_callback, close_stats_callback
         from handlers.settings import (
             settings_callback, quality_callback, volume_callback,
-            videomode_callback, set_mode_callback, update_sub_setting
+            videomode_callback, set_mode_callback, update_sub_setting,
+            playmode_panel, skipmode_panel, stopmode_panel
         )
         
         self.app.add_handler(CallbackQueryHandler(help_callback, regex("^help_commands$")))
@@ -275,8 +276,10 @@ class BotApp:
         self.app.add_handler(CallbackQueryHandler(broadcast_callback_handler, regex("^bc_")))
         
         # Mode settings callbacks
-        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^toggle_")))
-        self.app.add_handler(CallbackQueryHandler(update_sub_setting, regex("^set_(q|v|vid)_")))
+        self.app.add_handler(CallbackQueryHandler(playmode_panel, regex("^set_pm$")))
+        self.app.add_handler(CallbackQueryHandler(skipmode_panel, regex("^set_sm$")))
+        self.app.add_handler(CallbackQueryHandler(stopmode_panel, regex("^set_st$")))
+        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^(toggle_|update_)")))
         
         # Category callback handlers
         self.app.add_handler(CallbackQueryHandler(auth_callback, regex("^cmd_auth$")))
