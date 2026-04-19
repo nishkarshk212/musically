@@ -312,10 +312,19 @@ class BotApp:
         self.app.add_handler(CallbackQueryHandler(close_stats_callback, regex("^close_stats$")))
         
         # Settings callbacks
+        from handlers.settings import (
+            settings_callback, playmode_panel, skipmode_panel, stopmode_panel,
+            quality_callback, volume_callback, videomode_callback,
+            set_mode_callback, update_sub_setting
+        )
         self.app.add_handler(CallbackQueryHandler(settings_callback, regex("^settings_main$")))
+        self.app.add_handler(CallbackQueryHandler(playmode_panel, regex("^set_pm$")))
+        self.app.add_handler(CallbackQueryHandler(skipmode_panel, regex("^set_sm$")))
+        self.app.add_handler(CallbackQueryHandler(stopmode_panel, regex("^set_st$")))
         self.app.add_handler(CallbackQueryHandler(quality_callback, regex("^set_quality$")))
         self.app.add_handler(CallbackQueryHandler(volume_callback, regex("^set_volume$")))
         self.app.add_handler(CallbackQueryHandler(videomode_callback, regex("^set_videomode$")))
+        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^(update_pm_|update_ps_|update_sm_|update_ss_|update_st_|toggle_cleanmode|toggle_logging)")))
         self.app.add_handler(CallbackQueryHandler(update_sub_setting, regex("^(set_q_|set_v_|set_vid_)")))
         
         logger.info("Handlers setup complete!")

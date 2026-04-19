@@ -218,10 +218,10 @@ async def play_command(client: Client, message: Message):
         else:
             search_task = asyncio.create_task(downloader.search_and_download(query))
 
-        # Show searching message ONLY if search takes more than 300ms
+        # Show searching message ONLY if search takes more than 200ms (Reduced from 300ms)
         status_msg = None
         try:
-            song_info = await asyncio.wait_for(asyncio.shield(search_task), timeout=0.3)
+            song_info = await asyncio.wait_for(asyncio.shield(search_task), timeout=0.2)
         except asyncio.TimeoutError:
             status_msg = await message.reply_text("🔍 **δєᴧʀᴄʜɪηɢ...**")
             song_info = await search_task

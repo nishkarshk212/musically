@@ -66,8 +66,8 @@ async def get_settings_markup(chat_id: int):
             InlineKeyboardButton("ᴠɪᴅєσ ϻσᴅє", callback_data="set_videomode")
         ],
         [
-            InlineKeyboardButton(f"ᴄʟєᴧη ϻσᴅє {cm_icon}", callback_data="toggle_cleanmode"),
-            InlineKeyboardButton(f"ʟσɢɢɪηɢ {lg_icon}", callback_data="toggle_logging")
+            InlineKeyboardButton(f"ᴄʟєᴧη ϻσᴅє {'🟢 ᴏɴ' if clean_mode == 'enable' else '🔴 ᴏғғ'}", callback_data="toggle_cleanmode"),
+            InlineKeyboardButton(f"ʟσɢɢɪηɢ {'🟢 ᴏɴ' if logging == 'enable' else '🔴 ᴏғғ'}", callback_data="toggle_logging")
         ],
         [
             InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="back_to_start"),
@@ -124,13 +124,13 @@ async def playmode_panel(client: Client, callback_query: CallbackQuery):
     keyboard = [
         [InlineKeyboardButton("🔍 **ᴡʜᴏ ᴄᴀɴ ᴘʟᴀʏ:**", callback_data="none")],
         [
-            InlineKeyboardButton(f"{'✅ ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_pm_admins"),
-            InlineKeyboardButton(f"{'✅ ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_pm_everyone")
+            InlineKeyboardButton(f"{'🟢 ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_pm_admins"),
+            InlineKeyboardButton(f"{'🟢 ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_pm_everyone")
         ],
         [InlineKeyboardButton("⚙️ **ꜱᴛᴀᴛᴜꜱ:**", callback_data="none")],
         [
-            InlineKeyboardButton(f"{'✅ ' if current_status == 'enable' else ''}єηᴧʙʟє", callback_data="update_ps_enable"),
-            InlineKeyboardButton(f"{'✅ ' if current_status == 'disable' else ''}ᴅɪꜱᴧʙʟє", callback_data="update_ps_disable")
+            InlineKeyboardButton(f"{'🟢 ᴇɴᴀʙʟᴇ' if current_status == 'enable' else 'ᴇηᴧʙʟє'}", callback_data="update_ps_enable"),
+            InlineKeyboardButton(f"{'🔴 ᴅɪsᴀʙʟᴇ' if current_status == 'disable' else 'ᴅɪꜱᴧʙʟє'}", callback_data="update_ps_disable")
         ],
         [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
     ]
@@ -156,13 +156,13 @@ async def skipmode_panel(client: Client, callback_query: CallbackQuery):
     keyboard = [
         [InlineKeyboardButton("🔍 **ᴡʜᴏ ᴄᴀɴ sᴋɪᴘ:**", callback_data="none")],
         [
-            InlineKeyboardButton(f"{'✅ ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_sm_admins"),
-            InlineKeyboardButton(f"{'✅ ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_sm_everyone")
+            InlineKeyboardButton(f"{'🟢 ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_sm_admins"),
+            InlineKeyboardButton(f"{'🟢 ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_sm_everyone")
         ],
         [InlineKeyboardButton("⚙️ **ꜱᴛᴀᴛᴜꜱ:**", callback_data="none")],
         [
-            InlineKeyboardButton(f"{'✅ ' if current_status == 'enable' else ''}єηᴧʙʟє", callback_data="update_ss_enable"),
-            InlineKeyboardButton(f"{'✅ ' if current_status == 'disable' else ''}ᴅɪꜱᴧʙʟє", callback_data="update_ss_disable")
+            InlineKeyboardButton(f"{'🟢 ᴇɴᴀʙʟᴇ' if current_status == 'enable' else 'ᴇηᴧʙʟє'}", callback_data="update_ss_enable"),
+            InlineKeyboardButton(f"{'🔴 ᴅɪsᴀʙʟᴇ' if current_status == 'disable' else 'ᴅɪꜱᴧʙʟє'}", callback_data="update_ss_disable")
         ],
         [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
     ]
@@ -188,13 +188,13 @@ async def stopmode_panel(client: Client, callback_query: CallbackQuery):
     keyboard = [
         [InlineKeyboardButton("🔍 **ᴡʜᴏ ᴄᴀɴ sᴛᴏᴘ:**", callback_data="none")],
         [
-            InlineKeyboardButton(f"{'✅ ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_st_admins"),
-            InlineKeyboardButton(f"{'✅ ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_st_everyone")
+            InlineKeyboardButton(f"{'🟢 ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_st_admins"),
+            InlineKeyboardButton(f"{'🟢 ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_st_everyone")
         ],
         [InlineKeyboardButton("⚙️ **ꜱᴛᴀᴛᴜꜱ:**", callback_data="none")],
         [
-            InlineKeyboardButton(f"{'✅ ' if current_status == 'enable' else ''}єηᴧʙʟє", callback_data="update_st_status_enable"),
-            InlineKeyboardButton(f"{'✅ ' if current_status == 'disable' else ''}ᴅɪꜱᴧʙʟє", callback_data="update_st_status_disable")
+            InlineKeyboardButton(f"{'🟢 ᴇɴᴀʙʟᴇ' if current_status == 'enable' else 'ᴇηᴧʙʟє'}", callback_data="update_st_status_enable"),
+            InlineKeyboardButton(f"{'🔴 ᴅɪsᴀʙʟᴇ' if current_status == 'disable' else 'ᴅɪꜱᴧʙʟє'}", callback_data="update_st_status_disable")
         ],
         [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
     ]
@@ -273,6 +273,8 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
             await db_manager.save_chat_settings(chat_id, {"stop_status": status})
             await stopmode_panel(client, callback_query)
         
+    except MessageNotModified:
+        pass
     except Exception as e:
         await callback_query.answer(f"Update failed: {e}", show_alert=True)
 
