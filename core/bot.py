@@ -101,10 +101,10 @@ class BotApp:
             try:
                 bot_mention = self.app.me.mention
                 message = (
-                    f"{bot_mention} ʙᴏᴛ sᴛᴀʀᴛᴇᴅ : \n\n"
-                    f"ɪᴅ : {self.app.me.id}\n"
-                    f"ɴᴀᴍᴇ : {self.app.me.first_name}\n"
-                    f"ᴜsᴇʀɴᴀᴍᴇ : @{self.app.me.username}"
+                    f"**{bot_mention} 𝐒ᴛᴀʀᴛᴇᴅ 𝐒ᴜᴄᴄᴇssғᴜʟʟʏ...**\n\n"
+                    f"**ɪᴅ :** `{self.app.me.id}`\n"
+                    f"**ɴᴀᴍᴇ :** `{self.app.me.first_name}`\n"
+                    f"**ᴜsᴇʀɴᴀᴍᴇ :** @{self.app.me.username}"
                 )
                 await self.app.send_message(LOG_GROUP_ID, message)
             except Exception as e:
