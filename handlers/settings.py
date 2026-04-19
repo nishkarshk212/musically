@@ -44,7 +44,7 @@ async def is_admin_check(callback_query: CallbackQuery):
         return False
 
 async def get_settings_markup(chat_id: int):
-    """Generate main settings markup matching user's image style"""
+    """Generate main settings markup with specific requested structure"""
     settings = await db_manager.get_chat_settings(chat_id)
     
     play_mode = settings.get("play_mode", "everyone")
@@ -53,26 +53,33 @@ async def get_settings_markup(chat_id: int):
     
     pm_text = "ᴇᴠᴇʀʏᴏɴᴇ" if play_mode == "everyone" else "ᴀᴅᴍɪɴs"
     sm_text = "ᴇᴠᴇʀʏᴏɴᴇ" if skip_mode == "everyone" else "ᴀᴅᴍɪɴs"
+    
+    # Voting mode button only appears or works when skip permission is set to Admins
     vm_text = "ᴇɴᴀʙʟᴇ" if voting_mode == "enable" else "ᴅɪsᴀʙʟᴇ"
-
-    keyboard = [
-        [
-            InlineKeyboardButton("ᴀᴜᴛʜ ᴜsᴇʀs", callback_data="set_auth"),
-            InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data="set_language")
-        ],
-        [
-            InlineKeyboardButton(f"ᴘʟᴀʏ ᴍᴏᴅᴇ : {pm_text}", callback_data="toggle_playmode")
-        ],
-        [
-            InlineKeyboardButton(f"sᴋɪᴘ ᴍᴏᴅᴇ : {sm_text}", callback_data="toggle_skipmode")
-        ],
-        [
+    
+    keyboard = []
+    
+    # 1. Play Mode Row
+    keyboard.append([
+        InlineKeyboardButton(f"ᴘʟᴀʏ ᴍᴏᴅᴇ : {pm_text}", callback_data="toggle_playmode")
+    ])
+    
+    # 2. Skip Permission Row
+    keyboard.append([
+        InlineKeyboardButton(f"sᴋɪᴘ ᴘᴇʀᴍɪssɪᴏɴ : {sm_text}", callback_data="toggle_skipmode")
+    ])
+    
+    # 3. Voting Mode Row (Only if Skip Permission is Admins)
+    if skip_mode == "admins":
+        keyboard.append([
             InlineKeyboardButton(f"ᴠᴏᴛɪɴɢ ᴍᴏᴅᴇ : {vm_text}", callback_data="toggle_votingmode")
-        ],
-        [
-            InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close_playing")
-        ]
-    ]
+        ])
+    
+    # 4. Close Row
+    keyboard.append([
+        InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close_playing")
+    ])
+    
     return InlineKeyboardMarkup(keyboard)
 
 async def settings_callback(client: Client, callback_query: CallbackQuery):

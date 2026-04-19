@@ -30,6 +30,21 @@ async def broadcast_command(client: Client, message: Message):
         "state": None
     }
     
+    # Check if this is a reply (broadcast a specific message)
+    if message.reply_to_message:
+        reply = message.reply_to_message
+        if reply.text:
+            broadcast_state[user_id]["text"] = reply.text.html
+        if reply.photo or reply.video or reply.document:
+            broadcast_state[user_id]["media"] = reply
+            if reply.caption:
+                broadcast_state[user_id]["text"] = reply.caption.html
+        
+        await message.reply_text(
+            "✅ **ϻєꜱꜱᴧɢє ᴄᴧᴘᴛᴜʀєᴅ ꜰʀσϻ ʀєᴘʟʏ!**\n\n"
+            "ʏσᴜ ᴄᴧη ησᴡ ᴧᴅᴅ ʙᴜᴛᴛσηꜱ σʀ δᴛᴧʀᴛ ᴛʜє ʙʀσᴧᴅᴄᴧꜱᴛ."
+        )
+
     keyboard = InlineKeyboardMarkup([
         [
             InlineKeyboardButton("📝 δєᴛ ᴛєxᴛ", callback_data="bc_set_text"),
