@@ -190,14 +190,15 @@ async def play_command(client: Client, message: Message):
                 queue.current_song = song
                 queue.is_playing = True
                 
-                logger.info(f"🎵 [PLAY_CMD] First song, sending playing message")
+                logger.info(f"🎵 [PLAY_CMD] First song, joining voice chat first")
                 
-                # JOIN AND PLAY IN PARALLEL
-                join_task = asyncio.create_task(call_manager.join_voice_chat(chat_id, chat_username))
-                play_task = asyncio.create_task(call_manager.play_song(chat_id, song))
+                # MUST join voice chat BEFORE playing (sequential, not parallel)
+                await call_manager.join_voice_chat(chat_id, chat_username)
                 
-                # Wait for play to start
-                await play_task
+                logger.info(f"🎵 [PLAY_CMD] Voice chat joined, now playing song")
+                
+                # Now play the song
+                await call_manager.play_song(chat_id, song)
                 
                 # Send ONLY ONE playing message
                 asyncio.create_task(send_playing_message(client, chat_id, song, song_info))
@@ -286,23 +287,19 @@ async def play_command(client: Client, message: Message):
                 return
             
             try:
-                # Set as current song IMMEDIATELY
+                # Wait for join to complete BEFORE playing
+                await join_task
+                
+                # Set as current song
                 queue.current_song = song
                 queue.is_playing = True
                 
-                # Play song IMMEDIATELY (join_task already running)
-                play_task = asyncio.create_task(call_manager.play_song(chat_id, song))
+                # NOW play the song (voice chat is joined)
+                await call_manager.play_song(chat_id, song)
                 
                 # Delete status message if exists (non-blocking)
                 if status_msg:
                     asyncio.create_task(status_msg.delete())
-                
-                # Wait for playback to start
-                await play_task
-                
-                # Ensure join_task is finished
-                if not join_task.done():
-                    await join_task
                 
                 # Send ONLY ONE playing message in background
                 asyncio.create_task(
