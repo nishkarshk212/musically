@@ -44,75 +44,62 @@ async def is_admin_check(callback_query: CallbackQuery):
         return False
 
 async def get_settings_markup(chat_id: int):
-    """Generate main settings markup with simple toggles"""
+    """Generate main settings markup matching user's image style"""
     settings = await db_manager.get_chat_settings(chat_id)
     
     play_mode = settings.get("play_mode", "everyone")
     skip_mode = settings.get("skip_mode", "admins")
-    stop_mode = settings.get("stop_mode", "admins")
-    clean_mode = settings.get("clean_mode", "enable")
-    logging = settings.get("logging", "enable")
+    voting_mode = settings.get("voting_mode", "disable")
     
     pm_text = "ᴇᴠᴇʀʏᴏɴᴇ" if play_mode == "everyone" else "ᴀᴅᴍɪɴs"
     sm_text = "ᴇᴠᴇʀʏᴏɴᴇ" if skip_mode == "everyone" else "ᴀᴅᴍɪɴs"
-    st_text = "ᴇᴠᴇʀʏᴏɴᴇ" if stop_mode == "everyone" else "ᴀᴅᴍɪɴs"
-    
-    cm_icon = "🟢 ᴏɴ" if clean_mode == "enable" else "🔴 ᴏғғ"
-    lg_icon = "🟢 ᴏɴ" if logging == "enable" else "🔴 ᴏғғ"
+    vm_text = "ᴇɴᴀʙʟᴇ" if voting_mode == "enable" else "ᴅɪsᴀʙʟᴇ"
 
     keyboard = [
         [
-            InlineKeyboardButton("🎵 ᴘʟᴀʏ ᴍᴏᴅᴇ", callback_data="none"),
-            InlineKeyboardButton(pm_text, callback_data="toggle_playmode")
+            InlineKeyboardButton("ᴀᴜᴛʜ ᴜsᴇʀs", callback_data="set_auth"),
+            InlineKeyboardButton("ʟᴀɴɢᴜᴀɢᴇ", callback_data="set_language")
         ],
         [
-            InlineKeyboardButton("⏭️ sᴋɪᴘ ᴍᴏᴅᴇ", callback_data="none"),
-            InlineKeyboardButton(sm_text, callback_data="toggle_skipmode")
+            InlineKeyboardButton(f"ᴘʟᴀʏ ᴍᴏᴅᴇ : {pm_text}", callback_data="toggle_playmode")
         ],
         [
-            InlineKeyboardButton("⏹️ sᴛᴏᴘ ᴍᴏᴅᴇ", callback_data="none"),
-            InlineKeyboardButton(st_text, callback_data="toggle_stopmode")
+            InlineKeyboardButton(f"sᴋɪᴘ ᴍᴏᴅᴇ : {sm_text}", callback_data="toggle_skipmode")
         ],
         [
-            InlineKeyboardButton(f"ᴄʟєᴧη: {cm_icon}", callback_data="toggle_cleanmode"),
-            InlineKeyboardButton(f"ʟσɢɢɪηɢ: {lg_icon}", callback_data="toggle_logging")
+            InlineKeyboardButton(f"ᴠᴏᴛɪɴɢ ᴍᴏᴅᴇ : {vm_text}", callback_data="toggle_votingmode")
         ],
         [
-            InlineKeyboardButton("ǫᴜᴧʟɪᴛʏ", callback_data="set_quality"),
-            InlineKeyboardButton("ᴠσʟᴜϻє", callback_data="set_volume"),
-            InlineKeyboardButton("ᴠɪᴅєσ", callback_data="set_videomode")
-        ],
-        [
-            InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="back_to_start"),
-            InlineKeyboardButton("ᴄʟσꜱє", callback_data="close_playing")
+            InlineKeyboardButton("ᴄʟᴏsᴇ", callback_data="close_playing")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)
 
 async def settings_callback(client: Client, callback_query: CallbackQuery):
-    """Handle settings main panel"""
+    """Handle settings main panel with detailed chat info"""
     try:
         if not await is_admin_check(callback_query):
             await callback_query.answer("❌ Admin Only!", show_alert=True)
             return
 
-        chat_id = callback_query.message.chat.id
+        chat = callback_query.message.chat
+        chat_id = chat.id
+        chat_title = chat.title
+        
         markup = await get_settings_markup(chat_id)
         
-        settings_text = """
-╭───────────────────▣
-│❍ **ʙᴏᴛ sᴇᴛᴛɪɴɢs ᴘᴀɴᴇʟ**
-├───────────────────▣
-│
-│⚙️ **ᴄᴏɴꜰɪɢᴜʀᴇ ʏᴏᴜʀ ᴘʀᴇꜰᴇʀᴇɴᴄᴇs.**
-│   **ᴄʟɪᴄᴋ ᴏɴ ʙᴜᴛᴛᴏɴs ᴛᴏ ᴛᴏɢɢʟᴇ.**
-│
-╰───────────────────▣
+        settings_text = f"""
+<b><i>iTunes ✘ Music™ 🎶</i></b>
+<b><u>iTunes ✘ Music™ 🎶</u> SETTINGS PANEL</b>
+
+<b>CHAT ID :</b> <code>{chat_id}</code>
+<b>CHAT TITLE :</b> <code>{chat_title}</code>
+
+CLICK ON THE BUTTONS BELOW FOR CHANGING SETTINGS.
 """
         selected_image = random.choice(SETTINGS_IMAGES)
         
         try:
-            # Use edit_media for the main panel
             await callback_query.message.edit_media(
                 media=InputMediaPhoto(media=selected_image, caption=settings_text),
                 reply_markup=markup
@@ -120,7 +107,6 @@ async def settings_callback(client: Client, callback_query: CallbackQuery):
         except MessageNotModified:
             pass
         except Exception:
-            # Fallback to edit_caption if edit_media fails
             await callback_query.message.edit_caption(
                 caption=settings_text,
                 reply_markup=markup
@@ -160,6 +146,11 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
             new_mode = "everyone" if settings.get("stop_mode", "admins") == "admins" else "admins"
             await db_manager.save_chat_settings(chat_id, {"stop_mode": new_mode})
             await callback_query.answer(f"✅ Stop Mode: {new_mode.title()}")
+            
+        elif data == "toggle_votingmode":
+            new_mode = "enable" if settings.get("voting_mode", "disable") == "disable" else "disable"
+            await db_manager.save_chat_settings(chat_id, {"voting_mode": new_mode})
+            await callback_query.answer(f"✅ Voting Mode: {new_mode.title()}")
             
         elif data == "toggle_cleanmode":
             new_mode = "disable" if settings.get("clean_mode", "enable") == "enable" else "enable"

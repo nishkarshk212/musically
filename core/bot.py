@@ -321,7 +321,7 @@ class BotApp:
         self.app.add_handler(CallbackQueryHandler(quality_callback, regex("^set_quality$")))
         self.app.add_handler(CallbackQueryHandler(volume_callback, regex("^set_volume$")))
         self.app.add_handler(CallbackQueryHandler(videomode_callback, regex("^set_videomode$")))
-        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^(toggle_playmode|toggle_skipmode|toggle_stopmode|toggle_cleanmode|toggle_logging)")))
+        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^(toggle_playmode|toggle_skipmode|toggle_stopmode|toggle_votingmode|toggle_cleanmode|toggle_logging)")))
         self.app.add_handler(CallbackQueryHandler(update_sub_setting, regex("^(set_q_|set_v_|set_vid_)")))
         
         logger.info("Handlers setup complete!")
