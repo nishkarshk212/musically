@@ -44,30 +44,43 @@ async def is_admin_check(callback_query: CallbackQuery):
         return False
 
 async def get_settings_markup(chat_id: int):
-    """Generate main settings markup with status indicators"""
+    """Generate main settings markup with simple toggles"""
     settings = await db_manager.get_chat_settings(chat_id)
+    
+    play_mode = settings.get("play_mode", "everyone")
+    skip_mode = settings.get("skip_mode", "admins")
+    stop_mode = settings.get("stop_mode", "admins")
     clean_mode = settings.get("clean_mode", "enable")
     logging = settings.get("logging", "enable")
     
-    cm_icon = "✅" if clean_mode == "enable" else "❌"
-    lg_icon = "✅" if logging == "enable" else "❌"
+    pm_text = "ᴇᴠᴇʀʏᴏɴᴇ" if play_mode == "everyone" else "ᴀᴅᴍɪɴs"
+    sm_text = "ᴇᴠᴇʀʏᴏɴᴇ" if skip_mode == "everyone" else "ᴀᴅᴍɪɴs"
+    st_text = "ᴇᴠᴇʀʏᴏɴᴇ" if stop_mode == "everyone" else "ᴀᴅᴍɪɴs"
+    
+    cm_icon = "🟢 ᴏɴ" if clean_mode == "enable" else "🔴 ᴏғғ"
+    lg_icon = "🟢 ᴏɴ" if logging == "enable" else "🔴 ᴏғғ"
 
     keyboard = [
         [
-            InlineKeyboardButton("ᴘʟᴧʏ ϻσᴅє", callback_data="set_pm"),
-            InlineKeyboardButton("ꜱᴋɪᴘ ϻσᴅє", callback_data="set_sm")
+            InlineKeyboardButton("🎵 ᴘʟᴀʏ ᴍᴏᴅᴇ", callback_data="none"),
+            InlineKeyboardButton(pm_text, callback_data="toggle_playmode")
         ],
         [
-            InlineKeyboardButton("ꜱᴛσᴘ ϻσᴅє", callback_data="set_st"),
-            InlineKeyboardButton("ǫᴜᴧʟɪᴛʏ", callback_data="set_quality")
+            InlineKeyboardButton("⏭️ sᴋɪᴘ ᴍᴏᴅᴇ", callback_data="none"),
+            InlineKeyboardButton(sm_text, callback_data="toggle_skipmode")
         ],
         [
+            InlineKeyboardButton("⏹️ sᴛᴏᴘ ᴍᴏᴅᴇ", callback_data="none"),
+            InlineKeyboardButton(st_text, callback_data="toggle_stopmode")
+        ],
+        [
+            InlineKeyboardButton(f"ᴄʟєᴧη: {cm_icon}", callback_data="toggle_cleanmode"),
+            InlineKeyboardButton(f"ʟσɢɢɪηɢ: {lg_icon}", callback_data="toggle_logging")
+        ],
+        [
+            InlineKeyboardButton("ǫᴜᴧʟɪᴛʏ", callback_data="set_quality"),
             InlineKeyboardButton("ᴠσʟᴜϻє", callback_data="set_volume"),
-            InlineKeyboardButton("ᴠɪᴅєσ ϻσᴅє", callback_data="set_videomode")
-        ],
-        [
-            InlineKeyboardButton(f"ᴄʟєᴧη ϻσᴅє {'🟢 ᴏɴ' if clean_mode == 'enable' else '🔴 ᴏғғ'}", callback_data="toggle_cleanmode"),
-            InlineKeyboardButton(f"ʟσɢɢɪηɢ {'🟢 ᴏɴ' if logging == 'enable' else '🔴 ᴏғғ'}", callback_data="toggle_logging")
+            InlineKeyboardButton("ᴠɪᴅєσ", callback_data="set_videomode")
         ],
         [
             InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="back_to_start"),
@@ -80,139 +93,49 @@ async def settings_callback(client: Client, callback_query: CallbackQuery):
     """Handle settings main panel"""
     try:
         if not await is_admin_check(callback_query):
-            await callback_query.answer("❌ ᴛʜɪꜱ ᴘᴧηєʟ ɪꜱ ʀєꜱᴛʀɪᴄᴛєᴅ ᴛσ ɢʀσᴜᴩ ᴧᴅϻɪηꜱ!", show_alert=True)
+            await callback_query.answer("❌ Admin Only!", show_alert=True)
             return
 
         chat_id = callback_query.message.chat.id
         markup = await get_settings_markup(chat_id)
         
-        settings_text = f"""
+        settings_text = """
 ╭───────────────────▣
-│❍ **ʙᴏᴛ ꜱᴇᴛᴛɪɴɢꜱ ᴘᴀɴᴇʟ :**
+│❍ **ʙᴏᴛ sᴇᴛᴛɪɴɢs ᴘᴀɴᴇʟ**
 ├───────────────────▣
 │
-│⚙️ **ᴄᴏɴꜰɪɢᴜʀᴇ ʏᴏᴜʀ ʙᴏᴛ ʜᴇʀᴇ.**
-│   **ᴄʟɪᴄᴋ ᴏɴ ʙᴜᴛᴛᴏɴꜱ ᴛᴏ ᴛᴏɢɢʟᴇ.**
+│⚙️ **ᴄᴏɴꜰɪɢᴜʀᴇ ʏᴏᴜʀ ᴘʀᴇꜰᴇʀᴇɴᴄᴇs.**
+│   **ᴄʟɪᴄᴋ ᴏɴ ʙᴜᴛᴛᴏɴs ᴛᴏ ᴛᴏɢɢʟᴇ.**
 │
 ╰───────────────────▣
 """
         selected_image = random.choice(SETTINGS_IMAGES)
         
-        await callback_query.answer("Settings Menu")
-        
         try:
+            # Use edit_media for the main panel
             await callback_query.message.edit_media(
                 media=InputMediaPhoto(media=selected_image, caption=settings_text),
                 reply_markup=markup
             )
         except MessageNotModified:
             pass
+        except Exception:
+            # Fallback to edit_caption if edit_media fails
+            await callback_query.message.edit_caption(
+                caption=settings_text,
+                reply_markup=markup
+            )
+            
+        await callback_query.answer("Settings Menu")
         
     except Exception as e:
+        logger.error(f"Error in settings_callback: {e}")
         await callback_query.answer(f"Error: {e}", show_alert=True)
-
-# --- Category Sub-Panels ---
-
-async def playmode_panel(client: Client, callback_query: CallbackQuery):
-    """Sub-menu for Play Mode"""
-    chat_id = callback_query.message.chat.id
-    settings = await db_manager.get_chat_settings(chat_id)
-    
-    current_type = settings.get("play_mode", "everyone")
-    current_status = settings.get("play_status", "enable")
-    
-    keyboard = [
-        [InlineKeyboardButton("🔍 **ᴡʜᴏ ᴄᴀɴ ᴘʟᴀʏ:**", callback_data="none")],
-        [
-            InlineKeyboardButton(f"{'🟢 ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_pm_admins"),
-            InlineKeyboardButton(f"{'🟢 ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_pm_everyone")
-        ],
-        [InlineKeyboardButton("⚙️ **ꜱᴛᴀᴛᴜꜱ:**", callback_data="none")],
-        [
-            InlineKeyboardButton(f"{'🟢 ᴇɴᴀʙʟᴇ' if current_status == 'enable' else 'ᴇηᴧʙʟє'}", callback_data="update_ps_enable"),
-            InlineKeyboardButton(f"{'🔴 ᴅɪsᴀʙʟᴇ' if current_status == 'disable' else 'ᴅɪꜱᴧʙʟє'}", callback_data="update_ps_disable")
-        ],
-        [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
-    ]
-    try:
-        await callback_query.message.edit_caption(
-            caption="🎵 **ᴘʟᴀʏ ᴍᴏᴅᴇ sᴇᴛᴛɪɴɢs**\n\nConfigure who can play music and toggle feature status.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-    except MessageNotModified:
-        pass
-    except Exception as e:
-        logger.error(f"Error in playmode_panel: {e}")
-    await callback_query.answer("Play Mode Settings")
-
-async def skipmode_panel(client: Client, callback_query: CallbackQuery):
-    """Sub-menu for Skip Mode"""
-    chat_id = callback_query.message.chat.id
-    settings = await db_manager.get_chat_settings(chat_id)
-    
-    current_type = settings.get("skip_mode", "admins")
-    current_status = settings.get("skip_status", "enable")
-    
-    keyboard = [
-        [InlineKeyboardButton("🔍 **ᴡʜᴏ ᴄᴀɴ sᴋɪᴘ:**", callback_data="none")],
-        [
-            InlineKeyboardButton(f"{'🟢 ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_sm_admins"),
-            InlineKeyboardButton(f"{'🟢 ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_sm_everyone")
-        ],
-        [InlineKeyboardButton("⚙️ **ꜱᴛᴀᴛᴜꜱ:**", callback_data="none")],
-        [
-            InlineKeyboardButton(f"{'🟢 ᴇɴᴀʙʟᴇ' if current_status == 'enable' else 'ᴇηᴧʙʟє'}", callback_data="update_ss_enable"),
-            InlineKeyboardButton(f"{'🔴 ᴅɪsᴀʙʟᴇ' if current_status == 'disable' else 'ᴅɪꜱᴧʙʟє'}", callback_data="update_ss_disable")
-        ],
-        [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
-    ]
-    try:
-        await callback_query.message.edit_caption(
-            caption="⏭️ **sᴋɪᴘ ᴍᴏᴅᴇ sᴇᴛᴛɪɴɢs**\n\nConfigure who can skip music and toggle feature status.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-    except MessageNotModified:
-        pass
-    except Exception as e:
-        logger.error(f"Error in skipmode_panel: {e}")
-    await callback_query.answer("Skip Mode Settings")
-
-async def stopmode_panel(client: Client, callback_query: CallbackQuery):
-    """Sub-menu for Stop Mode"""
-    chat_id = callback_query.message.chat.id
-    settings = await db_manager.get_chat_settings(chat_id)
-    
-    current_type = settings.get("stop_mode", "admins")
-    current_status = settings.get("stop_status", "enable")
-    
-    keyboard = [
-        [InlineKeyboardButton("🔍 **ᴡʜᴏ ᴄᴀɴ sᴛᴏᴘ:**", callback_data="none")],
-        [
-            InlineKeyboardButton(f"{'🟢 ' if current_type == 'admins' else ''}ᴧᴅϻɪηꜱ", callback_data="update_st_admins"),
-            InlineKeyboardButton(f"{'🟢 ' if current_type == 'everyone' else ''}єᴠєʀʏσηє", callback_data="update_st_everyone")
-        ],
-        [InlineKeyboardButton("⚙️ **ꜱᴛᴀᴛᴜꜱ:**", callback_data="none")],
-        [
-            InlineKeyboardButton(f"{'🟢 ᴇɴᴀʙʟᴇ' if current_status == 'enable' else 'ᴇηᴧʙʟє'}", callback_data="update_st_status_enable"),
-            InlineKeyboardButton(f"{'🔴 ᴅɪsᴀʙʟᴇ' if current_status == 'disable' else 'ᴅɪꜱᴧʙʟє'}", callback_data="update_st_status_disable")
-        ],
-        [InlineKeyboardButton("⊶ ʙᴧᴄᴋ ⊶", callback_data="settings_main")]
-    ]
-    try:
-        await callback_query.message.edit_caption(
-            caption="⏹️ **sᴛᴏᴘ ᴍᴏᴅᴇ sᴇᴛᴛɪɴɢs**\n\nConfigure who can stop the stream and toggle feature status.",
-            reply_markup=InlineKeyboardMarkup(keyboard)
-        )
-    except MessageNotModified:
-        pass
-    except Exception as e:
-        logger.error(f"Error in stopmode_panel: {e}")
-    await callback_query.answer("Stop Mode Settings")
 
 # --- Update Handlers ---
 
 async def set_mode_callback(client: Client, callback_query: CallbackQuery):
-    """Handle all toggle and setting updates"""
+    """Handle all toggle and setting updates with simple logic"""
     try:
         if not await is_admin_check(callback_query):
             await callback_query.answer("❌ Admin Only!", show_alert=True)
@@ -222,63 +145,46 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
         data = callback_query.data
         settings = await db_manager.get_chat_settings(chat_id)
         
-        # 1. Main Panel Toggles
-        if data == "toggle_cleanmode":
+        # 1. Main Toggles
+        if data == "toggle_playmode":
+            new_mode = "admins" if settings.get("play_mode", "everyone") == "everyone" else "everyone"
+            await db_manager.save_chat_settings(chat_id, {"play_mode": new_mode})
+            await callback_query.answer(f"✅ Play Mode: {new_mode.title()}")
+            
+        elif data == "toggle_skipmode":
+            new_mode = "everyone" if settings.get("skip_mode", "admins") == "admins" else "admins"
+            await db_manager.save_chat_settings(chat_id, {"skip_mode": new_mode})
+            await callback_query.answer(f"✅ Skip Mode: {new_mode.title()}")
+            
+        elif data == "toggle_stopmode":
+            new_mode = "everyone" if settings.get("stop_mode", "admins") == "admins" else "admins"
+            await db_manager.save_chat_settings(chat_id, {"stop_mode": new_mode})
+            await callback_query.answer(f"✅ Stop Mode: {new_mode.title()}")
+            
+        elif data == "toggle_cleanmode":
             new_mode = "disable" if settings.get("clean_mode", "enable") == "enable" else "enable"
             await db_manager.save_chat_settings(chat_id, {"clean_mode": new_mode})
-            markup = await get_settings_markup(chat_id)
-            try:
-                await callback_query.message.edit_reply_markup(reply_markup=markup)
-            except MessageNotModified:
-                pass
-            await callback_query.answer(f"✅ Clean mode: {new_mode}d")
+            await callback_query.answer(f"✅ Clean mode: {'ON' if new_mode == 'enable' else 'OFF'}")
             
         elif data == "toggle_logging":
             new_mode = "disable" if settings.get("logging", "enable") == "enable" else "enable"
             await db_manager.save_chat_settings(chat_id, {"logging": new_mode})
-            markup = await get_settings_markup(chat_id)
-            try:
-                await callback_query.message.edit_reply_markup(reply_markup=markup)
-            except MessageNotModified:
-                pass
-            await callback_query.answer(f"✅ Logging: {new_mode}d")
-            
-        # 2. Play Mode Updates
-        elif data.startswith("update_pm_"):
-            mode = data.replace("update_pm_", "")
-            await db_manager.save_chat_settings(chat_id, {"play_mode": mode})
-            await playmode_panel(client, callback_query)
-        elif data.startswith("update_ps_"):
-            status = data.replace("update_ps_", "")
-            await db_manager.save_chat_settings(chat_id, {"play_status": status})
-            await playmode_panel(client, callback_query)
-            
-        # 3. Skip Mode Updates
-        elif data.startswith("update_sm_"):
-            mode = data.replace("update_sm_", "")
-            await db_manager.save_chat_settings(chat_id, {"skip_mode": mode})
-            await skipmode_panel(client, callback_query)
-        elif data.startswith("update_ss_"):
-            status = data.replace("update_ss_", "")
-            await db_manager.save_chat_settings(chat_id, {"skip_status": status})
-            await skipmode_panel(client, callback_query)
-            
-        # 4. Stop Mode Updates
-        elif data.startswith("update_st_admins") or data.startswith("update_st_everyone"):
-            mode = data.replace("update_st_", "")
-            await db_manager.save_chat_settings(chat_id, {"stop_mode": mode})
-            await stopmode_panel(client, callback_query)
-        elif data.startswith("update_st_status_"):
-            status = data.replace("update_st_status_", "")
-            await db_manager.save_chat_settings(chat_id, {"stop_status": status})
-            await stopmode_panel(client, callback_query)
+            await callback_query.answer(f"✅ Logging: {'ON' if new_mode == 'enable' else 'OFF'}")
+
+        # Update the markup after any toggle
+        markup = await get_settings_markup(chat_id)
+        try:
+            await callback_query.message.edit_reply_markup(reply_markup=markup)
+        except MessageNotModified:
+            pass
         
     except MessageNotModified:
         pass
     except Exception as e:
+        logger.error(f"Error in set_mode_callback: {e}")
         await callback_query.answer(f"Update failed: {e}", show_alert=True)
 
-# --- Other Sub-menus ---
+# --- Category Sub-Panels ---
 
 async def quality_callback(client: Client, callback_query: CallbackQuery):
     """Handle quality settings sub-menu"""
