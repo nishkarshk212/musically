@@ -44,7 +44,7 @@ async def is_admin_check(callback_query: CallbackQuery):
         return False
 
 async def get_settings_markup(chat_id: int):
-    """Generate main settings markup with specific requested structure"""
+    """Generate main settings markup with specific requested structure and icons"""
     settings = await db_manager.get_chat_settings(chat_id)
     
     play_mode = settings.get("play_mode", "everyone")
@@ -52,9 +52,11 @@ async def get_settings_markup(chat_id: int):
     voting_mode = settings.get("voting_mode", "disable")
     
     pm_text = "ᴇᴠᴇʀʏᴏɴᴇ" if play_mode == "everyone" else "ᴀᴅᴍɪɴs"
-    sm_text = "ᴇᴠᴇʀʏᴏɴᴇ" if skip_mode == "everyone" else "ᴀᴅᴍɪɴs"
     
-    # Voting mode button only appears or works when skip permission is set to Admins
+    # Skip Permission icons
+    sm_admins_icon = "✅" if skip_mode == "admins" else "❌"
+    sm_everyone_icon = "✅" if skip_mode == "everyone" else "❌"
+    
     vm_text = "ᴇɴᴀʙʟᴇ" if voting_mode == "enable" else "ᴅɪsᴀʙʟᴇ"
     
     keyboard = []
@@ -66,7 +68,11 @@ async def get_settings_markup(chat_id: int):
     
     # 2. Skip Permission Row
     keyboard.append([
-        InlineKeyboardButton(f"sᴋɪᴘ ᴘᴇʀᴍɪssɪᴏɴ : {sm_text}", callback_data="toggle_skipmode")
+        InlineKeyboardButton("sᴋɪᴘ ᴘᴇʀᴍɪssɪᴏɴ :", callback_data="none")
+    ])
+    keyboard.append([
+        InlineKeyboardButton(f"{sm_admins_icon} ᴀᴅᴍɪɴs", callback_data="set_sm_admins"),
+        InlineKeyboardButton(f"{sm_everyone_icon} ᴇᴠᴇʀʏᴏɴᴇ", callback_data="set_sm_everyone")
     ])
     
     # 3. Voting Mode Row (Only if Skip Permission is Admins)
@@ -144,10 +150,13 @@ async def set_mode_callback(client: Client, callback_query: CallbackQuery):
             await db_manager.save_chat_settings(chat_id, {"play_mode": new_mode})
             await callback_query.answer(f"✅ Play Mode: {new_mode.title()}")
             
-        elif data == "toggle_skipmode":
-            new_mode = "everyone" if settings.get("skip_mode", "admins") == "admins" else "admins"
-            await db_manager.save_chat_settings(chat_id, {"skip_mode": new_mode})
-            await callback_query.answer(f"✅ Skip Mode: {new_mode.title()}")
+        elif data == "set_sm_admins":
+            await db_manager.save_chat_settings(chat_id, {"skip_mode": "admins"})
+            await callback_query.answer("✅ Skip Permission: Admins")
+            
+        elif data == "set_sm_everyone":
+            await db_manager.save_chat_settings(chat_id, {"skip_mode": "everyone"})
+            await callback_query.answer("✅ Skip Permission: Everyone")
             
         elif data == "toggle_stopmode":
             new_mode = "everyone" if settings.get("stop_mode", "admins") == "admins" else "admins"

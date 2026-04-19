@@ -280,9 +280,6 @@ class BotApp:
         self.app.add_handler(CallbackQueryHandler(back_to_help_callback, regex("^back_to_help$")))
         self.app.add_handler(CallbackQueryHandler(broadcast_callback_handler, regex("^bc_")))
         
-        # Mode settings callbacks
-        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^(toggle_|update_)")))
-        
         # Category callback handlers
         self.app.add_handler(CallbackQueryHandler(auth_callback, regex("^cmd_auth$")))
         self.app.add_handler(CallbackQueryHandler(gcast_callback, regex("^cmd_gcast$")))
@@ -308,15 +305,12 @@ class BotApp:
         self.app.add_handler(CallbackQueryHandler(close_stats_callback, regex("^close_stats$")))
         
         # Settings callbacks
-        from handlers.settings import (
-            settings_callback,
-            quality_callback, volume_callback, videomode_callback,
-            update_sub_setting
-        )
         self.app.add_handler(CallbackQueryHandler(settings_callback, regex("^settings_main$")))
         self.app.add_handler(CallbackQueryHandler(quality_callback, regex("^set_quality$")))
         self.app.add_handler(CallbackQueryHandler(volume_callback, regex("^set_volume$")))
         self.app.add_handler(CallbackQueryHandler(videomode_callback, regex("^set_videomode$")))
+        # Simplified regex to only catch what's needed and avoid duplication
+        self.app.add_handler(CallbackQueryHandler(set_mode_callback, regex("^(toggle_|set_sm_)")))
         self.app.add_handler(CallbackQueryHandler(update_sub_setting, regex("^(set_q_|set_v_|set_vid_)")))
         
         logger.info("Handlers setup complete!")
