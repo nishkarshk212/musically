@@ -23,7 +23,16 @@ except RuntimeError:
 
 import os
 import logging
+import fcntl
 from core.bot import bot_app
+
+# INSTANCE LOCK: Prevent duplicate instances
+lock_file = open("/tmp/musically_bot.lock", "w")
+try:
+    fcntl.lockf(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except IOError:
+    print("❌ ERROR: Another instance of musically bot is already running!")
+    sys.exit(1)
 
 # Configure logging - optimized for performance
 logging.basicConfig(
