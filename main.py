@@ -7,6 +7,14 @@ A full-featured music bot for Telegram voice chats
 import asyncio
 import sys
 
+# ULTRA-FAST EVENT LOOP: Use uvloop if available
+try:
+    import uvloop
+    uvloop.install()
+    print("🚀 Using uvloop for high performance")
+except ImportError:
+    pass
+
 # Fix for pyrogram and Python 3.12+ event loop issue
 try:
     asyncio.get_event_loop()

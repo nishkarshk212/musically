@@ -172,10 +172,12 @@ class CallManager:
             
             # REMOVED ALL DELAYS - PyTgCalls handles buffering internally
             
-            # Create media stream - HIGH quality for stability
+            # Create media stream - ULTRA FAST initialization
+            # -analyzeduration 0 -probesize 32 speeds up ffmpeg stream detection
             stream = MediaStream(
                 song.file_path,
-                audio_parameters=AudioQuality.HIGH
+                audio_parameters=AudioQuality.HIGH,
+                ffmpeg_parameters="-analyzeduration 0 -probesize 32"
             )
             
             logger.info(f"Stream created, calling play()...")

@@ -197,7 +197,8 @@ class Downloader:
                 'playlist_items': '1',
                 'nocheckcertificate': True,
                 'socket_timeout': 3,  # Reduced from 5s
-                'retries': 1,  # Minimal retries for speed
+                'retries': 0,  # No retries for maximum speed
+                'ignoreerrors': True,
             }
             
             loop = asyncio.get_event_loop()
@@ -209,6 +210,9 @@ class Downloader:
                 return None
             
             video_info = info['entries'][0]
+            if not video_info:
+                return None
+                
             video_id = video_info.get('id')
             if not video_id:
                 return None
@@ -219,7 +223,7 @@ class Downloader:
             song_info = SongInfo()
             song_info.title = video_info.get('title', 'Unknown')
             song_info.duration = int(video_info.get('duration', 0))
-            song_info.thumbnail = f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+            song_info.thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
             song_info.channel = video_info.get('uploader', 'Unknown')
             song_info.views = video_info.get('view_count', '0')
             song_info.video_id = video_id
@@ -231,12 +235,17 @@ class Downloader:
             api_url = f"{NEXGEN_API_URL}/song/{video_id}"
             params = {"api": API_KEY} if API_KEY else {}
             
-            async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=15)) as response:
+            # Reduce timeout for stream link - if it's slow, we want to know immediately
+            async with session.get(api_url, params=params, timeout=aiohttp.ClientTimeout(total=10)) as response:
                     if response.status == 200:
                         data = await response.json()
                         if data and data.get("status") == "done" and data.get("link"):
                             song_info.file_path = data.get("link")
                             self._search_cache[query] = song_info
+                            # Keep cache size manageable
+                            if len(self._search_cache) > 100:
+                                first_key = next(iter(self._search_cache))
+                                del self._search_cache[first_key]
                             logger.info(f"✅ [NEXGEN] Stream link obtained in milliseconds")
                             return song_info
             
